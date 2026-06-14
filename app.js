@@ -1,18 +1,90 @@
 const API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DAILY_LIMIT = 30;
 
-let selectedTitle = '';
-let currentTopic = '';
-let currentStyle = '';
-let currentTone = '';
-let currentLength = '';
-let lastFullContent = '';
+let selectedTitle = '', lastFullContent = '', currentPlatform = 'xiaohongshu';
 
-// --- Key management ---
+// ====== Platform definitions ======
+const P = {
+  xiaohongshu: {
+    label: '小红书',
+    placeholder: '推荐5款适合学生党的平价护肤品',
+    styles: ['种草推荐','干货分享','情感故事','教程攻略','生活记录','避坑指南'],
+    tones: ['亲切自然','专业权威','幽默风趣','温暖治愈','犀利直白'],
+    lengths: [['短篇~300字','S'],['中篇~600字','M'],['长篇~1000字','L']],
+    features: [['🔥','种草推荐','好物分享、测评推荐'],['📚','干货分享','知识科普、经验总结'],['💕','情感故事','心情记录、生活感悟'],['🎯','教程攻略','Step-by-step 指南'],['☀️','生活记录','日常分享、Vlog 文案'],['⚠️','避坑指南','踩坑经历、防坑建议']],
+    quickRefines: ['多发点emoji，更活泼','缩短一半，更精炼','换个吸引人的角度','语气再口语化一点'],
+    titlePrompt: '你是一位真实的小红书博主。请为主题生成5个爆款标题。要求：每个标题要抓人，用数字、悬念、强烈态度、反差感；符合小红书风格，口语化、带emoji；5个标题要有不同切入角度；不要用"值得注意的是"、"总而言之"、"不可否认"。直接输出5行，每行一个标题，不要序号。',
+    fullPrompt: '你是一位真实的小红书博主。根据选定的标题和主题写一篇完整笔记。语言：像跟闺蜜聊天，口语化、带情绪，用"我"来写。排版：段落短（1-3行一段），多用破折号和省略号，emoji自然插入。禁用词："值得注意的是"、"不难发现"、"基于以上分析"、"总而言之"、"不可否认"、"值得一提的是"、"综上所述"。内容：不要干巴巴列1234，用具体感受和细节，Show don\'t tell。结尾：不要总结，用互动结尾（问读者问题）。格式：先输出标题（直接使用选定标题），空一行，正文，最后换行加标签。',
+    tokenMap: { S: 400, M: 800, L: 1200 }
+  },
+  douyin: {
+    label: '抖音',
+    placeholder: '5个让你工作效率翻倍的隐藏技巧',
+    styles: ['好物测评','知识科普','情感共鸣','生活Vlog','教程教学','热点评论'],
+    tones: ['亲切自然','幽默风趣','温暖治愈','犀利直白','热血励志'],
+    lengths: [['15秒快稿','XS'],['30秒标准','S'],['60秒完整','M'],['90秒深度','L']],
+    features: [['🛒','好物测评','产品开箱、使用体验'],['🧠','知识科普','冷知识、原理讲解'],['💞','情感共鸣','故事分享、情绪价值'],['🎬','生活Vlog','日常记录、旅行分享'],['📖','教程教学','技巧教学、步骤演示'],['🔥','热点评论','时事点评、观点输出']],
+    quickRefines: ['开头再爆一点','缩短到15秒版本','加更多画面描述','换个话题角度切入'],
+    titlePrompt: '你是一位抖音短视频创作者。请为主题生成5个引人注目的视频标题/话题。要求：标题在3秒内抓住注意力，用数字、悬念、反差、争议手法；口语化，像在跟朋友说话。直接输出5行，每行一个标题，不要序号。',
+    fullPrompt: '你是一位抖音短视频创作者。根据选定的标题和主题写一份完整的短视频脚本。\n\n格式要求：\n【开场】\n画面：场景、动作、表情描述\n口播：配音文案\n字幕：屏幕文字\n\n【主体】\n画面：\n口播：\n字幕：\n\n（根据需要分2-3段主体）\n\n【结尾】\n画面：\n口播：\n字幕：\n\n要求：开头3秒要有钩子；口语化，节奏紧凑；口播和字幕要区分开；结尾引导互动。\n\n格式：先输出标题行，空一行，再写完整脚本。',
+    tokenMap: { XS: 300, S: 500, M: 800, L: 1200 }
+  },
+  gongzhonghao: {
+    label: '公众号',
+    placeholder: '2025年最值得关注的AI趋势',
+    styles: ['行业分析','干货教程','情感故事','时事评论','产品评测','人物访谈'],
+    tones: ['专业权威','亲切自然','深度理性','温暖治愈','犀利观点'],
+    lengths: [['短篇~800字','S'],['中篇~1500字','M'],['长篇~2500字','L']],
+    features: [['📊','行业分析','趋势解读、数据洞察'],['📖','干货教程','知识教学、实操指南'],['💞','情感故事','真实故事、情感共鸣'],['📰','时事评论','热点分析、观点输出'],['🔬','产品评测','深度测评、对比分析'],['👤','人物访谈','人物故事、经验分享']],
+    quickRefines: ['加更多数据和案例','语气更通俗易懂','缩短到800字以内','开头更有吸引力'],
+    titlePrompt: '你是一位资深公众号作者。请为主题生成5个吸引点击的文章标题。要求：标题有信息量和吸引力，可用数字、问句、悬念；符合公众号读者阅读习惯，不太夸张。直接输出5行，每行一个标题，不要序号。',
+    fullPrompt: '你是一位资深公众号作者。根据选定的标题和主题写一篇完整的公众号文章。\n\n格式要求：开头有导语吸引阅读；正文用小标题分段（用【】标记）；每段不要太长；可引用数据案例增强说服力；结尾引导互动（点赞、在看、关注、评论）。\n\n语言风格：根据所选语气调整；专业但不晦涩，通俗但不肤浅；有观点有态度。\n\n格式：先输出标题行，空一行，再写正文。',
+    tokenMap: { S: 1200, M: 2000, L: 3500 }
+  }
+};
+
+// ====== Init platform ======
+function initPlatform(platform) {
+  currentPlatform = platform;
+  const cfg = P[platform];
+  document.getElementById('topic').placeholder = cfg.placeholder;
+  document.getElementById('toolDesc').textContent = '输入主题 → 挑选' + cfg.label + '标题 → 一键生成全文';
+
+  // Styles
+  const sSel = document.getElementById('styleSelect');
+  sSel.innerHTML = cfg.styles.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+
+  // Tones
+  const tSel = document.getElementById('toneSelect');
+  tSel.innerHTML = cfg.tones.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+
+  // Lengths
+  const lSel = document.getElementById('lengthSelect');
+  lSel.innerHTML = cfg.lengths.map(([label, val]) => '<option value="' + val + '">' + label + '</option>').join('');
+
+  // Quick refine buttons
+  document.getElementById('quickRefines').innerHTML = cfg.quickRefines.map(s =>
+    '<button class="btn btn-tag" onclick=\'quickRefine("' + s + '")\'>' + s + '</button>'
+  ).join('');
+
+  // Features
+  document.getElementById('featuresTitle').textContent = cfg.label + '支持的内容类型';
+  document.getElementById('featuresGrid').innerHTML = cfg.features.map(([icon, name, desc]) =>
+    '<div class="feature-item"><div class="feature-icon">' + icon + '</div><div class="feature-text">' + name + '<br><small>' + desc + '</small></div></div>'
+  ).join('');
+
+  // Reset
+  selectedTitle = ''; lastFullContent = '';
+  document.getElementById('titleSection').style.display = 'none';
+  document.getElementById('outputSection').style.display = 'none';
+  document.getElementById('errorSection').style.display = 'none';
+}
+
+// ====== Key mgmt ======
 function getKey() {
   let key = localStorage.getItem('ds_key');
   if (!key) {
-    key = prompt('请输入你的 DeepSeek API Key（在 platform.deepseek.com 获取）：\n（本工具仅需 10 元额度，key 只保存在你浏览器本地）');
+    key = prompt('请输入你的 DeepSeek API Key（在 platform.deepseek.com 获取）');
     if (key && key.trim()) { localStorage.setItem('ds_key', key.trim()); return key.trim(); }
     return null;
   }
@@ -20,7 +92,7 @@ function getKey() {
 }
 function clearKey() { localStorage.removeItem('ds_key'); location.reload(); }
 
-// --- Usage ---
+// ====== Usage ======
 function getUsage() {
   const today = new Date().toISOString().slice(0, 10);
   const raw = localStorage.getItem('ds_usage');
@@ -30,7 +102,7 @@ function getUsage() {
 }
 function getRemaining() { return DAILY_LIMIT - getUsage().count; }
 function checkLimit() {
-  if (getRemaining() <= 0) { showError('今日次数已用完（每日' + DAILY_LIMIT + '次），明天再来吧！'); return false; }
+  if (getRemaining() <= 0) { showError('今日次数已用完，明天再来吧！'); return false; }
   return true;
 }
 function useOne() {
@@ -38,158 +110,52 @@ function useOne() {
   document.getElementById('remainCount').textContent = getRemaining();
 }
 
-// --- UI helpers ---
+// ====== UI ======
 function $(id) { return document.getElementById(id); }
-function show(id) { $(id).style.display = ''; }
-function hide(id) { $(id).style.display = 'none'; }
-
-function showError(msg) {
-  $('errorMsg').textContent = msg;
-  show('errorSection');
-  hide('titleSection');
-}
-function hideError() { hide('errorSection'); }
-
-function showToast(msg) {
-  const t = document.querySelector('.toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-function setBtnLoading(id, loading) {
-  const btn = $(id);
-  btn.disabled = loading;
-  btn.querySelector('.btn-text').style.display = loading ? 'none' : '';
-  btn.querySelector('.btn-loading').style.display = loading ? '' : 'none';
-}
+function showError(msg) { $('errorMsg').textContent = msg; $('errorSection').style.display = ''; $('titleSection').style.display = 'none'; }
+function hideError() { $('errorSection').style.display = 'none'; }
+function showToast(msg) { const t = document.querySelector('.toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2000); }
+function setLoading(id, v) { const b = $(id); b.disabled = v; b.querySelector('.btn-text').style.display = v ? 'none' : ''; b.querySelector('.btn-loading').style.display = v ? '' : 'none'; }
 
 function getValues() {
-  return {
-    topic: $('topic').value.trim(),
-    style: $('style').value,
-    tone: $('tone').value,
-    length: $('length').value
-  };
+  return { topic: $('topic').value.trim(), style: $('styleSelect').value, tone: $('toneSelect').value, length: $('lengthSelect').value };
 }
 
-// --- System prompts ---
-const TITLE_PROMPT = `你是一位真实的小红书博主。请为主题生成5个爆款标题。
-
-要求：
-- 每个标题要抓人：用数字、悬念、强烈态度、反差感
-- 符合小红书风格：口语化、有情绪、带emoji
-- 5个标题要有不同的切入角度
-- 不要用"值得注意的是"、"总而言之"、"不可否认"、"值得一提的是"
-- 每个标题不超过30字
-
-直接输出5个标题，每个一行，不要序号。`;
-
-const FULL_PROMPT = `你是一位真实的小红书博主，有自己的性格和表达习惯。现在需要根据用户选定的标题和主题，写一篇完整的小红书笔记。
-
-【语言风格】
-- 像跟闺蜜聊天，口语化、自然
-- 可以带点小情绪、小吐槽
-- 用"我"来写，有自己的态度
-- 用词：真的、绝了、谁懂啊、狠狠爱了、安利给所有人
-
-【排版结构】
-- 标题已由用户选定，直接使用
-- 正文段落短！每段1-3行就换行
-- 多用破折号——和省略号...制造节奏感
-- emoji自然插入，在关键词上加就好
-
-【禁用词】
-"值得注意的是"、"不难发现"、"基于以上分析"、"总而言之"、"不可否认"、"值得一提的是"、"综上所述"、"除此之外"
-
-【内容要求】
-- 不要干巴巴列1234，用具体感受和细节
-- 展示，不是说教（Show, don't tell）
-- 允许主观偏见——你是个有态度的人
-- 分享自己的使用/体验感受
-
-【结尾】
-- 不要总结！用互动结尾
-- 问读者一个问题，引导评论区讨论
-
-【格式】
-先输出标题（直接使用选定标题），然后空一行，再写正文，最后换行加标签。`;
-
-const REFINE_PROMPT = `你是一位真实的小红书博主。请根据用户的修改要求，对原文进行改写。
-
-核心原则：
-- 保持原文的核心信息和主题不变
-- 只根据用户的修改要求调整
-- 其他保持小红书风格：口语化、短段落、有情绪、有互动
-- 不要用"值得注意的是"、"总而言之"、"不可否认"、"值得一提的是"
-- 标题不变，只改写正文
-
-先输出标题，空一行，再输出改写后的正文，最后加标签。`;
-
-// --- API call ---
-async function callDeepSeek(systemPrompt, userPrompt, maxTokens) {
+// ====== API ======
+async function callAPI(systemP, userP, maxTok) {
   const key = getKey();
   if (!key) return null;
-
   try {
-    const res = await fetch(API_URL, {
+    const r = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.9,
-        max_tokens: maxTokens || 800
-      })
+      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: systemP }, { role: 'user', content: userP }], temperature: 0.9, max_tokens: maxTok || 800 })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) { clearKey(); showError('API Key 无效，请重新输入。'); }
-      else { showError('API 错误: ' + (data.error?.message || res.statusText)); }
-      return null;
-    }
-    return data.choices?.[0]?.message?.content || '';
-  } catch (err) {
-    showError('网络错误，请检查网络连接后重试');
-    return null;
-  }
+    const d = await r.json();
+    if (!r.ok) { if (r.status === 401) clearKey(); showError('API 错误: ' + (d.error?.message || r.statusText)); return null; }
+    return d.choices?.[0]?.message?.content || '';
+  } catch(e) { showError('网络错误，请检查连接'); return null; }
 }
 
-// --- Step 1: Generate titles ---
+// ====== Step 1: Titles ======
 async function generateTitles() {
   const vals = getValues();
-  if (!vals.topic) { showError('请输入写作主题'); $('topic').focus(); return; }
+  if (!vals.topic) { showError('请输入主题'); $('topic').focus(); return; }
   if (!checkLimit()) return;
-
-  currentTopic = vals.topic; currentStyle = vals.style; currentTone = vals.tone; currentLength = vals.length;
-
-  hideError();
-  hide('outputSection');
-  hide('titleSection');
-  setBtnLoading('genTitleBtn', true);
-
-  const userPrompt = '请为主题「' + vals.topic + '」生成5个爆款标题。风格：' + vals.style + '，语气：' + vals.tone + '。';
-
-  const result = await callDeepSeek(TITLE_PROMPT, userPrompt, 500);
-  setBtnLoading('genTitleBtn', false);
-
+  hideError(); $('outputSection').style.display = 'none'; setLoading('genTitleBtn', true);
+  const result = await callAPI(P[currentPlatform].titlePrompt, '请为主题「' + vals.topic + '」生成5个标题。风格：' + vals.style + '，语气：' + vals.tone, 500);
+  setLoading('genTitleBtn', false);
   if (!result) return;
-
   useOne();
   const titles = result.split('\n').filter(t => t.trim() && !t.match(/^\d+[\.、]/)).slice(0, 5);
   if (titles.length === 0) { showError('生成标题失败，请重试'); return; }
-
   selectedTitle = '';
-  const list = $('titleList');
-  list.innerHTML = titles.map((t, i) =>
-    '<button class="title-chip" data-idx="' + i + '" onclick="pickTitle(this)">' + escapeHtml(t.trim()) + '</button>'
+  $('titleList').innerHTML = titles.map((t, i) =>
+    '<button class="title-chip" data-idx="' + i + '" onclick="pickTitle(this)">' + escHtml(t.trim()) + '</button>'
   ).join('');
-  hide('titleError');
+  $('titleError').style.display = 'none';
   $('genPostBtn').disabled = true;
-  show('titleSection');
+  $('titleSection').style.display = '';
   window.scrollTo({ top: $('titleSection').offsetTop - 80, behavior: 'smooth' });
 }
 
@@ -199,107 +165,94 @@ function pickTitle(el) {
   selectedTitle = el.textContent.trim();
   $('genPostBtn').disabled = false;
 }
+function escHtml(t) { return t.replace(/</g,'<').replace(/>/g,'>'); }
 
-function escapeHtml(t) { return t.replace(/</g,'<').replace(/>/g,'>'); }
-
-// --- Step 2: Generate full post ---
+// ====== Step 2: Full content ======
 async function generatePost() {
   if (!selectedTitle) { showError('请先选择一个标题'); return; }
   if (!checkLimit()) return;
-
-  hideError();
-  setBtnLoading('genPostBtn', true);
-
-  const userPrompt = '标题：' + selectedTitle + '\n主题：' + currentTopic + '\n风格：' + currentStyle + '\n语气：' + currentTone + '\n请写一篇' + currentLength + '篇幅的小红书笔记。';
-
-  const lengthMap = { short: 600, medium: 1000, long: 1500 };
-  const result = await callDeepSeek(FULL_PROMPT, userPrompt, lengthMap[currentLength] || 1000);
-  setBtnLoading('genPostBtn', false);
-
+  setLoading('genPostBtn', true);
+  const vals = getValues();
+  const tm = P[currentPlatform].tokenMap;
+  const maxTok = tm[vals.length] || 800;
+  const prompt = '标题：' + selectedTitle + '\n主题：' + vals.topic + '\n风格：' + vals.style + '\n语气：' + vals.tone + '\n篇幅：' + vals.length;
+  const result = await callAPI(P[currentPlatform].fullPrompt, prompt, maxTok);
+  setLoading('genPostBtn', false);
   if (!result) return;
-
   useOne();
   displayResult(selectedTitle, result);
 }
 
-// --- Refinement ---
+// ====== Refine ======
 async function refine() {
-  const instruction = $('refineInput').value.trim();
-  if (!instruction) { showToast('请输入修改要求'); return; }
-  await doRefine(instruction);
+  const inst = $('refineInput').value.trim();
+  if (!inst) { showToast('请输入修改要求'); return; }
+  await doRefine(inst);
 }
+async function quickRefine(inst) { $('refineInput').value = inst; await doRefine(inst); }
 
-async function quickRefine(instruction) {
-  $('refineInput').value = instruction;
-  await doRefine(instruction);
-}
-
-async function doRefine(instruction) {
+async function doRefine(inst) {
   if (!lastFullContent) return;
   if (!checkLimit()) return;
-
-  const userPrompt = '原文：\n' + lastFullContent + '\n\n修改要求：' + instruction;
-  const result = await callDeepSeek(REFINE_PROMPT, userPrompt, 1000);
+  const prompt = '原文：\n' + lastFullContent + '\n\n修改要求：' + inst + '\n\n请按要求改写，结构和标题不变。';
+  const result = await callAPI(P[currentPlatform].fullPrompt, prompt, 1200);
   if (!result) return;
-
   useOne();
   displayResult(selectedTitle, result);
   showToast('已按你的要求重新生成');
 }
 
-// --- Display ---
+// ====== Display ======
 function displayResult(title, raw) {
-  let titleText = title || '';
-  let body = raw;
-
-  // Try to extract title from output
-  const tm = raw.match(/(?:^|\n)标题[：:]\s*(.+?)(?:\n|$)/);
-  if (tm) { titleText = tm[1].trim(); body = raw.replace(tm[0], '').trim(); }
-
-  selectedTitle = titleText;
-  lastFullContent = titleText + '\n\n' + body;
-
-  $('outputTitle').textContent = titleText;
-  $('outputBody').textContent = body;
-
-  hide('titleSection');
-  show('outputSection');
+  let t = title || '', body = raw;
+  const m = raw.match(/(?:^|\n)标题[：:]\s*(.+?)(?:\n|$)/);
+  if (m) { t = m[1].trim(); body = raw.replace(m[0], '').trim(); }
+  selectedTitle = t; lastFullContent = t + '\n\n' + body;
+  $('outputTitle').textContent = t; $('outputBody').textContent = body;
+  $('titleSection').style.display = 'none'; $('outputSection').style.display = '';
   $('refineInput').value = '';
   window.scrollTo({ top: $('outputSection').offsetTop - 80, behavior: 'smooth' });
 }
 
-// --- Actions ---
+// ====== Actions ======
 function copyContent() {
-  const text = lastFullContent;
-  if (!text) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'))
-      .catch(() => fallbackCopy(text));
-  } else { fallbackCopy(text); }
+  const text = lastFullContent; if (!text) return;
+  if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(text).then(() => showToast('已复制')).catch(() => fallbackCopy(text)); }
+  else fallbackCopy(text);
 }
-
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+function fallbackCopy(t) {
+  const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
   document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); showToast('已复制到剪贴板'); }
-  catch (e) { showToast('复制失败，请手动复制'); }
+  try { document.execCommand('copy'); showToast('已复制'); } catch(e) { showToast('复制失败'); }
   document.body.removeChild(ta);
 }
+function resetAll() { selectedTitle = ''; lastFullContent = ''; $('outputSection').style.display = 'none'; $('titleSection').style.display = 'none'; hideError(); $('topic').focus(); }
 
-function resetAll() {
-  selectedTitle = ''; lastFullContent = '';
-  hide('outputSection'); hide('titleSection'); hideError();
-  $('topic').focus();
-}
-
-// --- Init ---
+// ====== Events ======
 document.addEventListener('DOMContentLoaded', () => {
-  $('topic').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateTitles(); }
+  // Init default platform
+  initPlatform('xiaohongshu');
+
+  // Platform tabs
+  document.getElementById('platformTabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.platform-tab');
+    if (!tab) return;
+    document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    initPlatform(tab.dataset.platform);
   });
-  $('refineInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); refine(); }
-  });
+
+  // Buttons
+  $('genTitleBtn').onclick = generateTitles;
+  $('regenerateTitlesBtn').onclick = generateTitles;
+  $('genPostBtn').onclick = generatePost;
+  $('copyBtn').onclick = copyContent;
+  $('resetBtn').onclick = resetAll;
+  $('refineBtn').onclick = refine;
+
+  // Enter key
+  $('topic').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateTitles(); } });
+  $('refineInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); refine(); } });
+
   $('remainCount').textContent = getRemaining();
 });

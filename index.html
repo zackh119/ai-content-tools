@@ -3,87 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>小红书爆款文案生成器 - 先选标题再写全文</title>
-<meta name="description" content="专业级小红书文案生成工具。先智能生成5个爆款标题供你选择，选中后再一键生成全文。支持种草、干货、情感等多种风格。">
-<meta name="keywords" content="小红书文案生成器,小红书标题,小红书笔记,文案工具">
+<title>AI 内容工具箱 - 小红书/抖音/公众号 文案生成</title>
+<meta name="description" content="一站式内容创作工具。支持小红书爆款文案、抖音短视频脚本、公众号长文。先选标题再写全文，不满意还能精修。">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="header">
   <div class="container">
-    <h1 class="logo">小红书文案神器</h1>
-    <p class="tagline">先选标题，再写全文 · 每个文案都为你量身定制</p>
+    <h1 class="logo">AI 内容工具箱</h1>
+    <p class="tagline">小红书 · 抖音 · 公众号 · 一个工具全搞定</p>
   </div>
 </header>
 
 <main class="main container">
   <div class="tool-card">
     <div class="tool-header">
-      <h2>🔥 爆款文案生成器</h2>
-      <p class="tool-desc">输入主题 → 挑选标题 → 一键生成全文</p>
+      <!-- Platform tabs -->
+      <div class="platform-tabs" id="platformTabs">
+        <button class="platform-tab active" data-platform="xiaohongshu">🔥 小红书</button>
+        <button class="platform-tab" data-platform="douyin">🎬 抖音脚本</button>
+        <button class="platform-tab" data-platform="gongzhonghao">📰 公众号</button>
+      </div>
+      <p class="tool-desc" id="toolDesc">输入主题 → 挑选标题 → 一键生成全文</p>
     </div>
 
     <div class="tool-body">
       <!-- Input -->
       <div class="input-section">
         <div class="form-group">
-          <label for="topic">写作主题 <span class="required">*</span></label>
-          <textarea id="topic" placeholder="例如：推荐5款适合学生党的平价护肤品" rows="3"></textarea>
+          <label for="topic" id="topicLabel">写作主题 <span class="required">*</span></label>
+          <textarea id="topic" placeholder="" rows="3"></textarea>
         </div>
 
-        <div class="form-row">
+        <div class="form-row" id="formRow">
           <div class="form-group">
-            <label for="style">内容风格</label>
-            <select id="style">
-              <option value="种草推荐">种草推荐</option>
-              <option value="干货分享">干货分享</option>
-              <option value="情感故事">情感故事</option>
-              <option value="教程攻略">教程攻略</option>
-              <option value="生活记录">生活记录</option>
-              <option value="避坑指南">避坑指南</option>
-            </select>
+            <label for="styleSelect">内容风格</label>
+            <select id="styleSelect"></select>
           </div>
           <div class="form-group">
-            <label for="tone">语气风格</label>
-            <select id="tone">
-              <option value="亲切自然">亲切自然</option>
-              <option value="专业权威">专业权威</option>
-              <option value="幽默风趣">幽默风趣</option>
-              <option value="温暖治愈">温暖治愈</option>
-              <option value="犀利直白">犀利直白</option>
-            </select>
+            <label for="toneSelect">语气风格</label>
+            <select id="toneSelect"></select>
           </div>
           <div class="form-group">
-            <label for="length">篇幅</label>
-            <select id="length">
-              <option value="short">短篇（~300字）</option>
-              <option value="medium" selected>中篇（~600字）</option>
-              <option value="long">长篇（~1000字）</option>
-            </select>
+            <label for="lengthSelect" id="lengthLabel">篇幅</label>
+            <select id="lengthSelect"></select>
           </div>
         </div>
 
-        <!-- Step 1: Generate titles -->
-        <button id="genTitleBtn" class="btn btn-primary" onclick="generateTitles()">
-          <span class="btn-text">✨ 生成爆款标题</span>
+        <button id="genTitleBtn" class="btn btn-primary">
+          <span class="btn-text">✨ 生成标题</span>
           <span class="btn-loading" style="display:none">生成中...</span>
         </button>
-
-        <div class="limit-info">
-          今日剩余 <strong id="remainCount">30</strong> 次
-        </div>
+        <div class="limit-info">今日剩余 <strong id="remainCount">30</strong> 次</div>
       </div>
 
-      <!-- Title options -->
+      <!-- Titles -->
       <div id="titleSection" class="title-section" style="display:none">
         <div class="title-header">
-          <h3>选择一个标题</h3>
-          <button class="btn btn-sm" onclick="generateTitles()">🔄 换一批</button>
+          <h3 id="titleSectionTitle">选择一个标题</h3>
+          <button class="btn btn-sm" id="regenerateTitlesBtn">🔄 换一批</button>
         </div>
         <div id="titleList" class="title-list"></div>
         <div id="titleError" class="title-error" style="display:none"></div>
-        <button id="genPostBtn" class="btn btn-primary btn-gen-post" onclick="generatePost()" disabled>
+        <button id="genPostBtn" class="btn btn-primary btn-gen-post" disabled>
           <span class="btn-text">📝 基于选中标题写全文</span>
           <span class="btn-loading" style="display:none">写作中...</span>
         </button>
@@ -94,8 +77,8 @@
         <div class="output-header">
           <h3>生成结果</h3>
           <div class="output-actions">
-            <button class="btn btn-sm" onclick="copyContent()">📋 复制</button>
-            <button class="btn btn-sm" onclick="resetAll()">🔄 重写一篇</button>
+            <button class="btn btn-sm" id="copyBtn">📋 复制</button>
+            <button class="btn btn-sm" id="resetBtn">🔄 重写一篇</button>
           </div>
         </div>
         <div class="output-content" id="outputContent">
@@ -103,49 +86,33 @@
           <div class="output-body" id="outputBody"></div>
         </div>
 
-        <!-- Refinement -->
         <div class="refine-section">
           <label>不满意？告诉我想怎么改</label>
           <div class="refine-row">
-            <input type="text" id="refineInput" placeholder="例如：多发点emoji / 更口语化 / 换个角度 / 缩短一点..." />
-            <button class="btn btn-sm" onclick="refine()">按这个改</button>
+            <input type="text" id="refineInput" placeholder="例如：多发点emoji / 更多细节 / 缩短一半..." />
+            <button class="btn btn-sm" id="refineBtn">按这个改</button>
           </div>
-          <div class="quick-refines">
-            <button class="btn btn-tag" onclick="quickRefine('多发点emoji，更活泼')">😊 多发emoji</button>
-            <button class="btn btn-tag" onclick="quickRefine('缩短一半，更精炼')">✂️ 缩短</button>
-            <button class="btn btn-tag" onclick="quickRefine('换个更吸引人的角度重新写')">🔄 换角度</button>
-            <button class="btn btn-tag" onclick="quickRefine('语气再口语化一点')">💬 更口语</button>
-          </div>
+          <div class="quick-refines" id="quickRefines"></div>
         </div>
       </div>
 
-      <!-- Error -->
       <div id="errorSection" class="error-section" style="display:none">
         <div class="error-msg" id="errorMsg"></div>
       </div>
     </div>
   </div>
 
-  <!-- Features -->
-  <div class="features-section">
-    <h3>支持的内容类型</h3>
-    <div class="features-grid">
-      <div class="feature-item"><div class="feature-icon">🔥</div><div class="feature-text">种草推荐<br><small>好物分享、测评推荐</small></div></div>
-      <div class="feature-item"><div class="feature-icon">📚</div><div class="feature-text">干货分享<br><small>知识科普、经验总结</small></div></div>
-      <div class="feature-item"><div class="feature-icon">💕</div><div class="feature-text">情感故事<br><small>心情记录、生活感悟</small></div></div>
-      <div class="feature-item"><div class="feature-icon">🎯</div><div class="feature-text">教程攻略<br><small>Step-by-step 指南</small></div></div>
-      <div class="feature-item"><div class="feature-icon">☀️</div><div class="feature-text">生活记录<br><small>日常分享</small></div></div>
-      <div class="feature-item"><div class="feature-icon">⚠️</div><div class="feature-text">避坑指南<br><small>踩坑经验、防坑建议</small></div></div>
-    </div>
+  <div class="features-section" id="featuresSection">
+    <h3 id="featuresTitle">支持的内容类型</h3>
+    <div class="features-grid" id="featuresGrid"></div>
   </div>
 </main>
 
 <footer class="footer">
   <div class="container">
-    <p>小红书文案神器 · 让每个人都能写出爆款笔记</p>
+    <p>AI 内容工具箱 · 免费在线工具</p>
   </div>
 </footer>
-
 <div class="toast"></div>
 <script src="app.js"></script>
 </body>

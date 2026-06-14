@@ -1,25 +1,40 @@
-const DEEPSEEK_KEY = 'sk-4618dde561c549a3ad479855de6a62f9';
 const API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DAILY_LIMIT = 30;
 
+// --- Key management ---
+function getKey() {
+  let key = localStorage.getItem('ds_key');
+  if (!key) {
+    key = prompt('请输入你的 DeepSeek API Key（在 platform.deepseek.com 获取）：\n（本工具仅需 10 元额度，key 只保存在你浏览器本地）');
+    if (key && key.trim()) {
+      localStorage.setItem('ds_key', key.trim());
+      return key.trim();
+    }
+    return null;
+  }
+  return key;
+}
+
+function clearKey() {
+  localStorage.removeItem('ds_key');
+  location.reload();
+}
+
+// --- Usage tracking ---
 function getUsage() {
   const today = new Date().toISOString().slice(0, 10);
   const raw = localStorage.getItem('ds_usage');
   const data = raw ? JSON.parse(raw) : {};
-  if (data.date !== today) {
-    data.date = today;
-    data.count = 0;
-  }
+  if (data.date !== today) { data.date = today; data.count = 0; }
   return data;
 }
 
+function getRemaining() { return DAILY_LIMIT - getUsage().count; }
+
 function checkLimit() {
-  const usage = getUsage();
-  if (usage.count >= DAILY_LIMIT) {
-    showError('今日免费次数已用完（每日' + DAILY_LIMIT + '次），明天再来吧！如果觉得好用可以打赏支持～');
-    return false;
-  }
-  return true;
+  const ok = getRemaining() > 0;
+  if (!ok) showError('今日免费次数已用完（每日' + DAILY_LIMIT + '次），明天再来吧！如果觉得好用可以打赏支持～');
+  return ok;
 }
 
 function incrementUsage() {
@@ -29,10 +44,7 @@ function incrementUsage() {
   return usage.count;
 }
 
-function getRemaining() {
-  return DAILY_LIMIT - getUsage().count;
-}
-
+// --- UI ---
 function getValues() {
   return {
     topic: document.getElementById('topic').value.trim(),
@@ -62,7 +74,7 @@ function showOutput(data) {
   document.getElementById('outputSection').style.display = '';
   document.getElementById('outputTitle').textContent = data.title || '';
   document.getElementById('outputBody').textContent = data.content || data.raw || '';
-  document.getElementById('remainCount').textContent = DAILY_LIMIT - getUsage().count;
+  document.getElementById('remainCount').textContent = getRemaining();
 }
 
 function showToast(msg) {
@@ -78,7 +90,14 @@ function showToast(msg) {
   t._hide = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// --- Generate ---
 async function generate() {
+  const key = getKey();
+  if (!key) {
+    showError('需要 DeepSeek API Key 才能使用。请稍后重试。');
+    return;
+  }
+
   const vals = getValues();
   if (!vals.topic) {
     showError('请输入写作主题');
@@ -110,7 +129,7 @@ async function generate() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + DEEPSEEK_KEY
+        'Authorization': 'Bearer ' + key
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -126,7 +145,12 @@ async function generate() {
     const data = await res.json();
 
     if (!res.ok) {
-      showError('API 返回错误: ' + (data.error?.message || res.statusText));
+      if (res.status === 401) {
+        clearKey();
+        showError('API Key 无效，请重新输入。注意不要有多余空格。');
+      } else {
+        showError('API 返回错误: ' + (data.error?.message || res.statusText));
+      }
       return;
     }
 
@@ -151,6 +175,7 @@ async function generate() {
   }
 }
 
+// --- Clipboard ---
 function copyContent() {
   const title = document.getElementById('outputTitle').textContent;
   const body = document.getElementById('outputBody').textContent;
@@ -176,6 +201,7 @@ function fallbackCopy(text) {
   document.body.removeChild(ta);
 }
 
+// --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('topic').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

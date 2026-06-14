@@ -1,7 +1,6 @@
 const API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DAILY_LIMIT = 30;
 
-// --- Key management ---
 function getKey() {
   let key = localStorage.getItem('ds_key');
   if (!key) {
@@ -20,7 +19,6 @@ function clearKey() {
   location.reload();
 }
 
-// --- Usage tracking ---
 function getUsage() {
   const today = new Date().toISOString().slice(0, 10);
   const raw = localStorage.getItem('ds_usage');
@@ -41,10 +39,8 @@ function incrementUsage() {
   const usage = getUsage();
   usage.count++;
   localStorage.setItem('ds_usage', JSON.stringify(usage));
-  return usage.count;
 }
 
-// --- UI ---
 function getValues() {
   return {
     topic: document.getElementById('topic').value.trim(),
@@ -90,7 +86,44 @@ function showToast(msg) {
   t._hide = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// --- Generate ---
+const SYSTEM_PROMPT = `你是一位真实的小红书博主，有自己的性格和表达习惯。现在需要你写一篇小红书笔记。
+
+【核心要求：彻底像人写的，不是AI】
+
+一、语言风格
+- 像在跟闺蜜聊天，口语化，自然
+- 可以带一点个人小情绪、小吐槽
+- 用"我"来写，有自己的态度
+- 适当用一些口语词：真的、绝了、谁懂啊、狠狠爱了、安利给所有人
+
+二、排版结构
+- 标题要抓人：用数字、悬念、强烈态度、反差感
+- 正文段落短！每段1-3行就换行
+- 多用破折号——和省略号...制造节奏感
+- emoji自然插入，不要每句都加，在关键词上加就好
+
+三、绝对不要用的词（用了就是AI味）：
+"值得注意的是"、"不难发现"、"基于以上分析"、"总而言之"、"不可否认"、"值得一提的是"、"综上所述"、"除此之外"、"首先"、"其次"、"总之"、"让我们来探讨"、"在当今社会"
+
+四、内容要有温度
+- 不要干巴巴列1234，要用具体感受和细节
+- 展示，不是说教（Show, don't tell）
+- 允许带点主观偏见——你是个有态度的人
+- 可以分享自己的使用/体验感受
+
+五、结尾
+- 不要总结！不要总结！
+- 要互动：问读者一个问题，或者引导评论区讨论
+- 比如："你们有用过类似的吗？评论区聊聊～"
+
+六、格式要求
+输出格式固定为：
+标题：xxx
+
+（正文内容）
+
+（标签，5-8个）`;
+
 async function generate() {
   const key = getKey();
   if (!key) {
@@ -112,17 +145,7 @@ async function generate() {
   const lengthMap = { short: 300, medium: 600, long: 1000 };
   const maxTokens = lengthMap[vals.length] || 600;
 
-  const systemPrompt = '你是一个专业的小红书文案写手，擅长写爆款笔记。\n\n'
-    + '生成内容必须符合小红书风格：\n'
-    + '1. 标题要吸睛：用数字、问句、感叹号、悬念\n'
-    + '2. 正文有情绪：用 emoji、短句、口语化表达\n'
-    + '3. 段落短小：每段不超过 3 行，留白多\n'
-    + '4. 有互动引导：结尾引导点赞/收藏/关注/评论\n'
-    + '5. 最后加 5-8 个话题标签\n\n'
-    + '请严格按以下格式输出：\n\n'
-    + '标题：<生成的标题>\n\n<正文内容>\n\n<标签>';
-
-  const userPrompt = '请以「' + vals.style + '」的风格、「' + vals.tone + '」的语气，写一篇关于「' + vals.topic + '」的小红书笔记。';
+  const userPrompt = '请以「' + vals.style + '」的风格、「' + vals.tone + '」的语气，写一篇关于「' + vals.topic + '」的小红书笔记。记住：要有人味儿！像真人写的，不是AI。';
 
   try {
     const res = await fetch(API_URL, {
@@ -134,10 +157,10 @@ async function generate() {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.8,
+        temperature: 0.9,
         max_tokens: maxTokens
       })
     });
@@ -154,7 +177,7 @@ async function generate() {
       return;
     }
 
-    const content = data.choices?.[0]?.message?.content || '';
+    let content = data.choices?.[0]?.message?.content || '';
     let title = '';
     let body = content;
     const titleMatch = content.match(/(?:^|\n)标题[：:]\s*(.+?)(?:\n|$)/);
@@ -175,7 +198,6 @@ async function generate() {
   }
 }
 
-// --- Clipboard ---
 function copyContent() {
   const title = document.getElementById('outputTitle').textContent;
   const body = document.getElementById('outputBody').textContent;
@@ -201,7 +223,6 @@ function fallbackCopy(text) {
   document.body.removeChild(ta);
 }
 
-// --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('topic').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

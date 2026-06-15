@@ -1,186 +1,255 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>销售数据可视化仪表盘</title>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>销售数据仪表盘 Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
-.header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:30px 40px;border-bottom:1px solid #2a2a4a}
-.header h1{font-size:24px;color:#fff}
-.header p{font-size:13px;color:#888;margin-top:4px}
-.container{max-width:1200px;margin:0 auto;padding:20px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0a0a14;color:#e0e0e0}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:28px 32px;border-bottom:1px solid #2a2a4a}
+.header h1{font-size:22px;color:#fff}.header p{font-size:13px;color:#777;margin-top:2px}
+.container{max-width:1300px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.kpi-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a}
-.kpi-card .label{font-size:12px;color:#888;margin-bottom:6px}
-.kpi-card .value{font-size:28px;font-weight:700;color:#fff}
-.kpi-card .change{font-size:12px;margin-top:4px}
-.kpi-card.up .change{color:#4caf50}
-.kpi-card.down .change{color:#f44336}
+/* KPI row spans full width */
+.kpi-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpi{background:#1a1a2e;border-radius:10px;padding:14px 16px;border:1px solid #2a2a4a}
+.kpi .l{font-size:11px;color:#888;margin-bottom:3px}
+.kpi .v{font-size:22px;font-weight:700;color:#fff}
+.kpi .s{font-size:11px;margin-top:3px}
+.kpi .s.up{color:#4caf50}.kpi .s.down{color:#f44336}
 
-.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.chart-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a}
-.chart-card h3{font-size:14px;color:#aaa;margin-bottom:16px}
-.chart-card canvas{width:100%!important;max-height:280px}
+/* Chart cards */
+.card{background:#1a1a2e;border-radius:10px;padding:16px;border:1px solid #2a2a4a}
+.card.half{grid-column:span 1}
+.card h3{font-size:13px;color:#999;margin-bottom:10px;font-weight:600}
+.card canvas{width:100%!important;max-height:200px!important}
+.card.full{grid-column:1/-1}
 
-.table-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a;margin-bottom:24px}
-.table-card h3{font-size:14px;color:#aaa;margin-bottom:12px}
+/* Data table section */
+.table-section{grid-column:1/-1;background:#1a1a2e;border-radius:10px;padding:16px;border:1px solid #2a2a4a}
+.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.table-header h3{font-size:13px;color:#999}
+.table-header .btn,.toolbar .btn{padding:6px 14px;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;color:#fff}
+.btn-add{background:#4caf50}.btn-add:hover{background:#43a047}
+.btn-del{background:#f44336;padding:4px 10px!important;font-size:11px!important}
+.btn-clear{background:#555}.btn-clear:hover{background:#666}
+.btn-export{background:#667eea}.btn-export:hover{background:#5a6fd6}
+
+.table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:10px 12px;background:#2a2a4a;color:#aaa;font-weight:500}
-td{padding:10px 12px;border-bottom:1px solid #2a2a4a}
-tr:hover td{background:#1f1f35}
-.positive{color:#4caf50}
-.negative{color:#f44336}
+th{padding:8px 10px;background:#2a2a4a;color:#999;font-weight:500;text-align:left;white-space:nowrap;border:1px solid #333}
+td{padding:4px;border:1px solid #333;background:#0f0f1a}
+td input{width:100%;padding:5px 8px;border:none;background:transparent;color:#e0e0e0;font-size:13px;font-family:inherit}
+td input:focus{outline:none;background:#1a1a2e;border-radius:4px}
+tr:hover td{background:#151529}
 
-.data-input{margin-bottom:24px}
-.data-input textarea{width:100%;padding:12px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:13px;font-family:monospace;resize:vertical;min-height:100px}
-.data-input textarea:focus{outline:none;border-color:#667eea}
-.data-input .btn{background:#667eea;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;margin-top:8px;font-weight:600}
-.data-input .btn:hover{background:#5a6fd6}
-.data-input .hint{font-size:11px;color:#666;margin-top:6px}
+.toolbar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 
-.export-bar{display:flex;gap:8px;margin-bottom:16px}
-.export-bar .btn{background:#2a2a4a;color:#e0e0e0;border:1px solid #3a3a5a;padding:8px 20px;border-radius:8px;font-size:13px;cursor:pointer}
-.export-bar .btn:hover{background:#3a3a5a}
+.status-bar{grid-column:1/-1;display:flex;gap:16px;padding:10px 16px;background:#1a1a2e;border-radius:10px;border:1px solid #2a2a4a;font-size:12px;color:#888;flex-wrap:wrap}
+.status-bar span{color:#ccc}
 
-@media(max-width:768px){.kpi-row,.chart-row{grid-template-columns:1fr}.header{padding:20px}}
+@media(max-width:900px){.container{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.header{padding:16px}}
 </style>
-</head>
-<body>
+</head><body>
 
 <div class="header">
-  <h1>📊 销售数据分析仪表盘</h1>
-  <p>拖入数据 · 自动分析 · 可视化呈现</p>
+  <h1>📊 销售数据仪表盘 Pro</h1>
+  <p>表格录入 · 自动分析 · 多种对比</p>
 </div>
 
 <div class="container">
-  <div class="data-input">
-    <textarea id="dataInput" rows="4">产品A,1月,120,15000
-产品B,1月,85,10200
-产品C,1月,200,18000
-产品A,2月,150,18750
-产品B,2月,110,13200
-产品C,2月,180,16200
-产品A,3月,200,25000
-产品B,3月,95,11400
-产品C,3月,220,19800</textarea>
-    <button class="btn" onclick="updateDashboard()">🔄 更新分析</button>
-    <div class="hint">格式：产品名,月份,销量,销售额。每行一条，用逗号分隔</div>
-  </div>
 
-  <div class="kpi-row" id="kpiRow">
-    <div class="kpi-card"><div class="label">总销售额</div><div class="value" id="totalRevenue">0</div><div class="change">↑ 12.5%</div></div>
-    <div class="kpi-card"><div class="label">总销量</div><div class="value" id="totalSales">0</div><div class="change">↑ 8.3%</div></div>
-    <div class="kpi-card"><div class="label">平均客单价</div><div class="value" id="avgPrice">0</div><div class="change">↑ 3.2%</div></div>
-    <div class="kpi-card"><div class="label">产品数</div><div class="value" id="productCount">0</div><div class="change">—</div></div>
-  </div>
+<!-- KPI -->
+<div class="kpi-row" id="kpiRow">
+  <div class="kpi"><div class="l">总销售额</div><div class="v" id="kpiRevenue">—</div><div class="s" id="kpiRevChange"></div></div>
+  <div class="kpi"><div class="l">总销量</div><div class="v" id="kpiQty">—</div><div class="s" id="kpiQtyChange"></div></div>
+  <div class="kpi"><div class="l">平均客单价</div><div class="v" id="kpiAvg">—</div><div class="s">—</div></div>
+  <div class="kpi"><div class="l">产品数量</div><div class="v" id="kpiProducts">—</div><div class="s">—</div></div>
+  <div class="kpi"><div class="l">最高销量产品</div><div class="v" id="kpiTop" style="font-size:17px">—</div><div class="s" id="kpiTopVal"></div></div>
+  <div class="kpi"><div class="l">最佳月份</div><div class="v" id="kpiBestMonth" style="font-size:17px">—</div><div class="s" id="kpiBestVal"></div></div>
+</div>
 
-  <div class="chart-row">
-    <div class="chart-card"><h3>📈 月度销售额趋势</h3><canvas id="trendChart"></canvas></div>
-    <div class="chart-card"><h3>📊 产品销量对比</h3><canvas id="barChart"></canvas></div>
-  </div>
+<!-- Charts -->
+<div class="card half"><h3>📈 月度销售趋势</h3><canvas id="trendChart"></canvas></div>
+<div class="card half"><h3>📊 产品销售额对比</h3><canvas id="barChart"></canvas></div>
+<div class="card half"><h3>🥧 产品销量分布</h3><canvas id="pieChart"></canvas></div>
+<div class="card half"><h3>📊 月度销量对比</h3><canvas id="stackChart"></canvas></div>
 
-  <div class="table-card">
-    <h3>📋 详细数据</h3>
-    <table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
+<!-- Data table -->
+<div class="table-section">
+  <div class="table-header">
+    <h3>✏️ 数据录入表</h3>
+    <div>
+      <button class="btn btn-export" onclick="exportCSV()">📥 导出CSV</button>
+      <button class="btn btn-clear" onclick="if(confirm('确定清除所有数据？'))initSample()">🗑️ 重置示例</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table><thead><tr>
+      <th>月份</th><th>产品</th><th>销量</th><th>销售额(元)</th><th style="width:40px"></th>
+    </tr></thead><tbody id="tableBody"></tbody></table>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-add" onclick="addRow()">➕ 添加行</button>
   </div>
 </div>
 
+<!-- Status -->
+<div class="status-bar" id="statusBar">
+  <span>💾 数据自动保存到本地</span>
+  <span id="rowCount"></span>
+</div>
+
+</div>
+
 <script>
-let chart1 = null, chart2 = null;
+let chart1,chart2,chart3,chart4;
+let data = [];
 
-function parseData(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  const parsed = { products: [], months: [], rows: [] };
-  const seen = {};
-  
-  lines.forEach(line => {
-    const parts = line.split(',').map(s => s.trim());
-    if (parts.length < 3) return;
-    const [product, month, qty, revenue] = parts;
-    const q = parseInt(qty) || 0;
-    const r = parseFloat(revenue) || 0;
-    if (!seen[product]) { seen[product] = true; parsed.products.push(product); }
-    if (!seen['m_' + month]) { seen['m_' + month] = true; parsed.months.push(month); }
-    parsed.rows.push({ product, month, qty: q, revenue: r });
-  });
-  return parsed;
+function initSample() {
+  data = [
+    {month:'1月',product:'智能手表',qty:120,rev:48000},
+    {month:'1月',product:'蓝牙耳机',qty:200,rev:39800},
+    {month:'1月',product:'充电宝',qty:150,rev:19350},
+    {month:'2月',product:'智能手表',qty:150,rev:59850},
+    {month:'2月',product:'蓝牙耳机',qty:180,rev:35820},
+    {month:'2月',product:'充电宝',qty:200,rev:25800},
+    {month:'2月',product:'智能音箱',qty:80,rev:23920},
+    {month:'3月',product:'智能手表',qty:200,rev:79800},
+    {month:'3月',product:'蓝牙耳机',qty:250,rev:49750},
+    {month:'3月',product:'充电宝',qty:180,rev:23220},
+    {month:'3月',product:'智能音箱',qty:120,rev:35880},
+    {month:'3月',product:'手机壳',qty:300,rev:9000},
+  ];
+  save(); render();
 }
 
-function updateDashboard() {
-  const raw = document.getElementById('dataInput').value;
-  const data = parseData(raw);
-  if (data.rows.length === 0) return;
+function load() {
+  const raw = localStorage.getItem('sales_pro_data');
+  if (raw) { data = JSON.parse(raw); render(); }
+  else initSample();
+}
+function save() { localStorage.setItem('sales_pro_data', JSON.stringify(data)); }
 
-  // KPIs
-  const totalRev = data.rows.reduce((s, r) => s + r.revenue, 0);
-  const totalQty = data.rows.reduce((s, r) => s + r.qty, 0);
-  const avgPrice = totalQty > 0 ? (totalRev / totalQty).toFixed(0) : 0;
-  document.getElementById('totalRevenue').textContent = '¥' + totalRev.toLocaleString();
-  document.getElementById('totalSales').textContent = totalQty.toLocaleString();
-  document.getElementById('avgPrice').textContent = '¥' + avgPrice;
-  document.getElementById('productCount').textContent = data.products.length;
-
-  // Table
-  const allMonths = [...new Set(data.rows.map(r => r.month))];
-  let tableHTML = '<tr><th>产品</th>';
-  allMonths.forEach(m => { tableHTML += '<th>' + m + '</th>'; });
-  tableHTML += '<th>合计</th></tr>';
-  
-  data.products.forEach(p => {
-    const pRows = data.rows.filter(r => r.product === p);
-    const total = pRows.reduce((s, r) => s + r.revenue, 0);
-    tableHTML += '<tr><td><strong>' + p + '</strong></td>';
-    allMonths.forEach(m => {
-      const r = pRows.find(r => r.month === m);
-      tableHTML += '<td>' + (r ? '¥' + r.revenue.toLocaleString() : '-') + '</td>';
-    });
-    tableHTML += '<td class="positive">¥' + total.toLocaleString() + '</td></tr>';
-  });
-  document.getElementById('tableHead').innerHTML = '<tr><th>产品</th>' + allMonths.map(m => '<th>' + m + '</th>').join('') + '<th>合计</th></tr>';
-  document.getElementById('tableBody').innerHTML = tableHTML;
-
-  // Trend chart (monthly revenue)
-  const months = [...new Set(data.rows.map(r => r.month))];
-  const monthlyRev = months.map(m => data.rows.filter(r => r.month === m).reduce((s, r) => s + r.revenue, 0));
-  
-  if (chart1) chart1.destroy();
-  chart1 = new Chart(document.getElementById('trendChart'), {
-    type: 'line', data: {
-      labels: months,
-      datasets: [{ label: '销售额', data: monthlyRev, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,.1)', fill: true, tension: .4 }]
-    },
-    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888', callback: v => '¥' + v/1000 + 'k' } } } }
-  });
-
-  // Bar chart (product comparison)
-  const prodTotals = data.products.map(p => data.rows.filter(r => r.product === p).reduce((s, r) => s + r.revenue, 0));
-  const colors = ['#667eea', '#f093fb', '#4fc3f7', '#81c784', '#ffb74d', '#e57373'];
-  
-  if (chart2) chart2.destroy();
-  chart2 = new Chart(document.getElementById('barChart'), {
-    type: 'bar', data: {
-      labels: data.products,
-      datasets: [{ label: '总销售额', data: prodTotals, backgroundColor: colors.slice(0, data.products.length), borderRadius: 6 }]
-    },
-    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888', callback: v => '¥' + v/1000 + 'k' } } } }
-  });
+function addRow(month,product,qty,rev) {
+  data.push({month:month||'',product:product||'',qty:qty||0,rev:rev||0});
+  save(); render();
+  // Scroll to bottom
+  setTimeout(()=>{const tb=document.getElementById('tableBody');if(tb.lastChild)tb.lastChild.scrollIntoView({behavior:'smooth'})},100);
 }
 
-function exportChart() {
-  const c = document.getElementById('trendChart');
+function deleteRow(idx) {
+  data.splice(idx,1); save(); render();
+}
+
+function render() {
+  const tb = document.getElementById('tableBody');
+  tb.innerHTML = data.map((d,i)=>`<tr>
+    <td><input value="${escAttr(d.month)}" onchange="updateField(${i},'month',this.value)" placeholder="1月"></td>
+    <td><input value="${escAttr(d.product)}" onchange="updateField(${i},'product',this.value)" placeholder="产品名"></td>
+    <td><input type="number" value="${d.qty||''}" onchange="updateField(${i},'qty',parseInt(this.value)||0)" placeholder="0" style="text-align:right"></td>
+    <td><input type="number" value="${d.rev||''}" onchange="updateField(${i},'rev',parseFloat(this.value)||0)" placeholder="0" style="text-align:right"></td>
+    <td><button class="btn btn-del" onclick="deleteRow(${i})">✕</button></td>
+  </tr>`).join('');
+
+  calcStats();
+  document.getElementById('rowCount').textContent = `📋 ${data.length} 条记录 | 覆盖 ${[...new Set(data.map(d=>d.month))].length} 个月`;
+}
+
+function updateField(idx,field,val) {
+  data[idx][field] = val; save(); calcStats();
+}
+
+function escAttr(t){return (t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function calcStats() {
+  const months = [...new Set(data.map(d=>d.month))].sort();
+  const products = [...new Set(data.map(d=>d.product))].filter(Boolean);
+  const totalRev = data.reduce((s,d)=>s+d.rev,0);
+  const totalQty = data.reduce((s,d)=>s+d.qty,0);
+  const avgPrice = totalQty > 0 ? totalRev/totalQty : 0;
+
+  // Month-over-month
+  let prevRev = 0, currRev = 0, prevQty = 0, currQty = 0;
+  if (months.length >= 2) {
+    const last = months[months.length-1];
+    const prev = months[months.length-2];
+    currRev = data.filter(d=>d.month===last).reduce((s,d)=>s+d.rev,0);
+    prevRev = data.filter(d=>d.month===prev).reduce((s,d)=>s+d.rev,0);
+    currQty = data.filter(d=>d.month===last).reduce((s,d)=>s+d.qty,0);
+    prevQty = data.filter(d=>d.month===prev).reduce((s,d)=>s+d.qty,0);
+  }
+
+  const revChange = prevRev > 0 ? ((currRev-prevRev)/prevRev*100).toFixed(1) : 0;
+  const qtyChange = prevQty > 0 ? ((currQty-prevQty)/prevQty*100).toFixed(1) : 0;
+
+  document.getElementById('kpiRevenue').textContent = '¥' + totalRev.toLocaleString();
+  document.getElementById('kpiQty').textContent = totalQty.toLocaleString();
+  document.getElementById('kpiAvg').textContent = '¥' + avgPrice.toFixed(0);
+  document.getElementById('kpiProducts').textContent = products.length;
+
+  document.getElementById('kpiRevChange').textContent = (revChange>0?'↑ ':'↓ ')+Math.abs(revChange)+'% 环比';
+  document.getElementById('kpiRevChange').className = 's ' + (revChange>=0?'up':'down');
+  document.getElementById('kpiQtyChange').textContent = (qtyChange>0?'↑ ':'↓ ')+Math.abs(qtyChange)+'% 环比';
+  document.getElementById('kpiQtyChange').className = 's ' + (qtyChange>=0?'up':'down');
+
+  // Top product
+  const prodRev = {};
+  data.forEach(d=>{if(d.product){prodRev[d.product]=(prodRev[d.product]||0)+d.rev;}});
+  const sorted = Object.entries(prodRev).sort((a,b)=>b[1]-a[1]);
+  if (sorted.length) {
+    document.getElementById('kpiTop').textContent = sorted[0][0];
+    document.getElementById('kpiTopVal').textContent = '¥' + sorted[0][1].toLocaleString();
+  }
+
+  // Best month
+  const monRev = {};
+  data.forEach(d=>{if(d.month){monRev[d.month]=(monRev[d.month]||0)+d.rev;}});
+  const monSorted = Object.entries(monRev).sort((a,b)=>b[1]-a[1]);
+  if (monSorted.length) {
+    document.getElementById('kpiBestMonth').textContent = monSorted[0][0];
+    document.getElementById('kpiBestVal').textContent = '¥' + monSorted[0][1].toLocaleString();
+  }
+
+  // Trend chart
+  const monRevs = months.map(m=>data.filter(d=>d.month===m).reduce((s,d)=>s+d.rev,0));
+  const monQtys = months.map(m=>data.filter(d=>d.month===m).reduce((s,d)=>s+d.qty,0));
+  destroyCharts();
+  if (months.length) {
+    chart1 = new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:months,datasets:[
+      {label:'销售额',data:monRevs,borderColor:'#667eea',backgroundColor:'rgba(102,126,234,.1)',fill:true,tension:.4,yAxisID:'y'},
+      {label:'销量',data:monQtys,borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.1)',fill:true,tension:.4,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'},position:'left'},y1:{ticks:{color:'#888'},position:'right',grid:{display:false}}}}});
+    
+    // Bar chart
+    const prodTotalRev = products.map(p=>data.filter(d=>d.product===p).reduce((s,d)=>s+d.rev,0));
+    const colors = ['#667eea','#f093fb','#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4db6ac'];
+    chart2 = new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:products,datasets:[{
+      label:'总销售额',data:prodTotalRev,backgroundColor:colors.slice(0,products.length),borderRadius:6
+    }]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
+
+    // Pie chart
+    const prodTotalQty = products.map(p=>data.filter(d=>d.product===p).reduce((s,d)=>s+d.qty,0));
+    chart3 = new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:products,datasets:[{data:prodTotalQty,backgroundColor:colors}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#888',padding:8,font:{size:11}}}}}});
+
+    // Stacked bar
+    chart4 = new Chart(document.getElementById('stackChart'),{type:'bar',data:{labels:months,datasets:products.map((p,i)=>({label:p,data:months.map(m=>data.filter(d=>d.month===m&&d.product===p).reduce((s,d)=>s+d.rev,0)),backgroundColor:colors[i%colors.length]}))},options:{responsive:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:'#888'}},y:{stacked:true,ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
+  }
+}
+
+function destroyCharts(){
+  [chart1,chart2,chart3,chart4].forEach(c=>{if(c)c.destroy();chart1=chart2=chart3=chart4=null;});
+}
+
+function exportCSV() {
+  let csv = '月份,产品,销量,销售额\n';
+  data.forEach(d=>{csv+=`${d.month},${d.product},${d.qty},${d.rev}\n`;});
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
   const link = document.createElement('a');
-  link.download = '销售趋势图.png';
-  link.href = c.toDataURL('image/png');
+  link.href = URL.createObjectURL(blob);
+  link.download = '销售数据.csv';
   link.click();
 }
 
-updateDashboard();
+load();
 </script>
-</body>
-</html>
+</body></html>

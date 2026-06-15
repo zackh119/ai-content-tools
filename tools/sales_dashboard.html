@@ -1,50 +1,62 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>销售数据仪表盘 Pro</title>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>销售数据仪表盘 Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0a0a14;color:#e0e0e0}
-.header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:28px 32px;border-bottom:1px solid #2a2a4a}
-.header h1{font-size:22px;color:#fff}.header p{font-size:13px;color:#777;margin-top:2px}
-.container{max-width:1300px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#07070d;color:#e8e8e8}
 
-/* KPI row spans full width */
-.kpi-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.kpi{background:#1a1a2e;border-radius:10px;padding:14px 16px;border:1px solid #2a2a4a}
-.kpi .l{font-size:11px;color:#888;margin-bottom:3px}
-.kpi .v{font-size:22px;font-weight:700;color:#fff}
-.kpi .s{font-size:11px;margin-top:3px}
-.kpi .s.up{color:#4caf50}.kpi .s.down{color:#f44336}
+/* Header */
+.header{background:linear-gradient(135deg,#141428,#1a0a30,#141428);padding:28px 32px;border-bottom:1px solid #2a2a4a;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(102,126,234,.08),transparent 70%)}
+.header h1{font-size:22px;color:#fff;position:relative;display:flex;align-items:center;gap:10px}
+.header h1::before{content:'📊'}
+.header p{font-size:13px;color:#777;margin-top:2px;position:relative}
 
-/* Chart cards */
-.card{background:#1a1a2e;border-radius:10px;padding:16px;border:1px solid #2a2a4a}
-.card.half{grid-column:span 1}
-.card h3{font-size:13px;color:#999;margin-bottom:10px;font-weight:600}
-.card canvas{width:100%!important;max-height:200px!important}
+/* Container */
+.container{max-width:1360px;margin:0 auto;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* KPI Row */
+.kpi-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.kpi{background:linear-gradient(135deg,#141428,#1a1a30);border-radius:10px;padding:13px 14px;border:1px solid #2a2a4a;position:relative;overflow:hidden;transition:transform .2s}
+.kpi:hover{transform:translateY(-2px);border-color:#667eea55}
+.kpi .l{font-size:11px;color:#888;margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.kpi .v{font-size:21px;font-weight:700;color:#fff}
+.kpi .s{font-size:11px;margin-top:2px;display:flex;align-items:center;gap:3px}
+.kpi .s.green{color:#4caf50}.kpi .s.red{color:#f44336}.kpi .s.gray{color:#666}
+.kpi .icon{font-size:18px;position:absolute;right:12px;top:50%;transform:translateY(-50%);opacity:.15}
+
+/* Cards */
+.card{background:linear-gradient(135deg,#141428,#1a1a30);border-radius:10px;padding:14px;border:1px solid #2a2a4a}
+.card h3{font-size:12px;color:#999;margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:6px}
+.card canvas{width:100%!important}
+.card.half canvas{max-height:190px!important}
 .card.full{grid-column:1/-1}
 
-/* Data table section */
-.table-section{grid-column:1/-1;background:#1a1a2e;border-radius:10px;padding:16px;border:1px solid #2a2a4a}
-.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.table-header h3{font-size:13px;color:#999}
-.table-header .btn,.toolbar .btn{padding:6px 14px;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;color:#fff}
-.btn-add{background:#4caf50}.btn-add:hover{background:#43a047}
-.btn-del{background:#f44336;padding:4px 10px!important;font-size:11px!important}
-.btn-clear{background:#555}.btn-clear:hover{background:#666}
-.btn-export{background:#667eea}.btn-export:hover{background:#5a6fd6}
+/* Data Table */
+.table-section{grid-column:1/-1;background:linear-gradient(135deg,#141428,#1a1a30);border-radius:10px;padding:14px;border:1px solid #2a2a4a}
+.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.table-header h3{font-size:12px;color:#999;display:flex;align-items:center;gap:6px}
+.toolbar{display:flex;gap:5px;flex-wrap:wrap}
+.toolbar .btn{padding:5px 12px;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;color:#fff;transition:opacity .2s}
+.toolbar .btn:hover{opacity:.85}
+.btn-add{background:#4caf50}.btn-export{background:#667eea}.btn-clear{background:#555}
 
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{padding:8px 10px;background:#2a2a4a;color:#999;font-weight:500;text-align:left;white-space:nowrap;border:1px solid #333}
-td{padding:4px;border:1px solid #333;background:#0f0f1a}
-td input{width:100%;padding:5px 8px;border:none;background:transparent;color:#e0e0e0;font-size:13px;font-family:inherit}
-td input:focus{outline:none;background:#1a1a2e;border-radius:4px}
-tr:hover td{background:#151529}
+.table-wrap{overflow-x:auto;border-radius:6px;border:1px solid #2a2a4a}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:800px}
+th{padding:7px 8px;background:#1f1f3a;color:#999;font-weight:500;text-align:left;white-space:nowrap;border-bottom:1px solid #2a2a4a;font-size:11px}
+td{padding:2px;border-bottom:1px solid #1a1a30;background:#0c0c18}
+td input{width:100%;padding:5px 6px;border:none;background:transparent;color:#e0e0e0;font-size:12px;font-family:inherit;border-radius:3px}
+td input:focus{outline:none;background:#1a1a30}
+td input.num{text-align:right}
+td .auto{color:#666;padding:5px 6px;font-size:12px;text-align:right}
+tr:hover td{background:#101020}
+.btn-del{background:#f44336;color:#fff;border:none;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:12px;opacity:.6;transition:opacity .2s}
+.btn-del:hover{opacity:1}
 
-.toolbar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-
-.status-bar{grid-column:1/-1;display:flex;gap:16px;padding:10px 16px;background:#1a1a2e;border-radius:10px;border:1px solid #2a2a4a;font-size:12px;color:#888;flex-wrap:wrap}
-.status-bar span{color:#ccc}
+/* Status */
+.status-bar{grid-column:1/-1;padding:8px 12px;background:#141428;border-radius:8px;border:1px solid #2a2a4a;font-size:11px;color:#888;display:flex;gap:16px;flex-wrap:wrap}
 
 @media(max-width:900px){.container{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.header{padding:16px}}
@@ -52,49 +64,48 @@ tr:hover td{background:#151529}
 </head><body>
 
 <div class="header">
-  <h1>📊 销售数据仪表盘 Pro</h1>
-  <p>表格录入 · 自动分析 · 多种对比</p>
+  <h1>销售数据仪表盘 Pro</h1>
+  <p>表格录入 · 自动分析 · 成本利润 · 环比对比</p>
 </div>
 
 <div class="container">
 
 <!-- KPI -->
 <div class="kpi-row" id="kpiRow">
-  <div class="kpi"><div class="l">总销售额</div><div class="v" id="kpiRevenue">—</div><div class="s" id="kpiRevChange"></div></div>
-  <div class="kpi"><div class="l">总销量</div><div class="v" id="kpiQty">—</div><div class="s" id="kpiQtyChange"></div></div>
-  <div class="kpi"><div class="l">平均客单价</div><div class="v" id="kpiAvg">—</div><div class="s">—</div></div>
-  <div class="kpi"><div class="l">产品数量</div><div class="v" id="kpiProducts">—</div><div class="s">—</div></div>
-  <div class="kpi"><div class="l">最高销量产品</div><div class="v" id="kpiTop" style="font-size:17px">—</div><div class="s" id="kpiTopVal"></div></div>
-  <div class="kpi"><div class="l">最佳月份</div><div class="v" id="kpiBestMonth" style="font-size:17px">—</div><div class="s" id="kpiBestVal"></div></div>
+  <div class="kpi"><div class="l">💰 总销售额</div><div class="v" id="kpiRev">—</div><div class="s" id="kpiRevC"></div><div class="icon">📈</div></div>
+  <div class="kpi"><div class="l">📈 总利润</div><div class="v" id="kpiProfit">—</div><div class="s" id="kpiProfitC"></div><div class="icon">📊</div></div>
+  <div class="kpi"><div class="l">🎯 利润率</div><div class="v" id="kpiMargin">—</div><div class="s" id="kpiMarginC"></div><div class="icon">💎</div></div>
+  <div class="kpi"><div class="l">📦 总销量</div><div class="v" id="kpiQty">—</div><div class="s" id="kpiQtyC"></div><div class="icon">🛒</div></div>
+  <div class="kpi"><div class="l">💵 平均客单价</div><div class="v" id="kpiAvg">—</div><div class="s gray">—</div><div class="icon">🏷️</div></div>
+  <div class="kpi"><div class="l">🏆 最佳产品</div><div class="v" id="kpiTop" style="font-size:16px">—</div><div class="s" id="kpiTopVal"></div><div class="icon">⭐</div></div>
 </div>
 
 <!-- Charts -->
-<div class="card half"><h3>📈 月度销售趋势</h3><canvas id="trendChart"></canvas></div>
-<div class="card half"><h3>📊 产品销售额对比</h3><canvas id="barChart"></canvas></div>
-<div class="card half"><h3>🥧 产品销量分布</h3><canvas id="pieChart"></canvas></div>
-<div class="card half"><h3>📊 月度销量对比</h3><canvas id="stackChart"></canvas></div>
+<div class="card half"><h3>📈 收入与利润趋势</h3><canvas id="trendChart"></canvas></div>
+<div class="card half"><h3>📊 产品利润对比</h3><canvas id="barChart"></canvas></div>
+<div class="card half"><h3>🥧 成本 vs 利润</h3><canvas id="pieChart"></canvas></div>
+<div class="card half"><h3>📊 月度成本收益</h3><canvas id="stackChart"></canvas></div>
 
-<!-- Data table -->
+<!-- Table -->
 <div class="table-section">
   <div class="table-header">
-    <h3>✏️ 数据录入表</h3>
-    <div>
+    <h3>✏️ 数据录入（成本自动按比例生成，可手动修改）</h3>
+    <div class="toolbar">
       <button class="btn btn-export" onclick="exportCSV()">📥 导出CSV</button>
-      <button class="btn btn-clear" onclick="if(confirm('确定清除所有数据？'))initSample()">🗑️ 重置示例</button>
+      <button class="btn btn-clear" onclick="if(confirm('重置为示例数据？'))initSample()">🔄 重置示例</button>
     </div>
   </div>
   <div class="table-wrap">
     <table><thead><tr>
-      <th>月份</th><th>产品</th><th>销量</th><th>销售额(元)</th><th style="width:40px"></th>
+      <th style="width:60px">月份</th><th>产品</th><th style="width:60px">销量</th><th style="width:90px">销售额</th><th style="width:80px">成本</th><th style="width:90px">利润</th><th style="width:60px">利润率</th><th style="width:30px"></th>
     </tr></thead><tbody id="tableBody"></tbody></table>
   </div>
-  <div class="toolbar">
+  <div class="toolbar" style="margin-top:8px">
     <button class="btn btn-add" onclick="addRow()">➕ 添加行</button>
   </div>
 </div>
 
-<!-- Status -->
-<div class="status-bar" id="statusBar">
+<div class="status-bar">
   <span>💾 数据自动保存到本地</span>
   <span id="rowCount"></span>
 </div>
@@ -102,152 +113,157 @@ tr:hover td{background:#151529}
 </div>
 
 <script>
-let chart1,chart2,chart3,chart4;
-let data = [];
+let c1,c2,c3,c4; let data=[];
 
-function initSample() {
-  data = [
-    {month:'1月',product:'智能手表',qty:120,rev:48000},
-    {month:'1月',product:'蓝牙耳机',qty:200,rev:39800},
-    {month:'1月',product:'充电宝',qty:150,rev:19350},
-    {month:'2月',product:'智能手表',qty:150,rev:59850},
-    {month:'2月',product:'蓝牙耳机',qty:180,rev:35820},
-    {month:'2月',product:'充电宝',qty:200,rev:25800},
-    {month:'2月',product:'智能音箱',qty:80,rev:23920},
-    {month:'3月',product:'智能手表',qty:200,rev:79800},
-    {month:'3月',product:'蓝牙耳机',qty:250,rev:49750},
-    {month:'3月',product:'充电宝',qty:180,rev:23220},
-    {month:'3月',product:'智能音箱',qty:120,rev:35880},
-    {month:'3月',product:'手机壳',qty:300,rev:9000},
-  ];
-  save(); render();
+function initSample(){
+  data=[
+    {m:'1月',p:'智能手表',q:120,r:48000,c:26400},
+    {m:'1月',p:'蓝牙耳机',q:200,r:39800,c:19900},
+    {m:'1月',p:'充电宝',q:150,r:19350,c:11610},
+    {m:'2月',p:'智能手表',q:150,r:59850,c:32918},
+    {m:'2月',p:'蓝牙耳机',q:180,r:35820,c:17910},
+    {m:'2月',p:'充电宝',q:200,r:25800,c:15480},
+    {m:'2月',p:'智能音箱',q:80,r:23920,c:14352},
+    {m:'3月',p:'智能手表',q:200,r:79800,c:43890},
+    {m:'3月',p:'蓝牙耳机',q:250,r:49750,c:24875},
+    {m:'3月',p:'充电宝',q:180,r:23220,c:13932},
+    {m:'3月',p:'智能音箱',q:120,r:35880,c:21528},
+    {m:'3月',p:'手机壳',q:300,r:9000,c:5400},
+  ];save();render()
 }
 
-function load() {
-  const raw = localStorage.getItem('sales_pro_data');
-  if (raw) { data = JSON.parse(raw); render(); }
-  else initSample();
-}
-function save() { localStorage.setItem('sales_pro_data', JSON.stringify(data)); }
+function load(){const r=localStorage.getItem('sales_pro_data');if(r){data=JSON.parse(r);render()}else initSample()}
+function save(){localStorage.setItem('sales_pro_data',JSON.stringify(data))}
 
-function addRow(month,product,qty,rev) {
-  data.push({month:month||'',product:product||'',qty:qty||0,rev:rev||0});
-  save(); render();
-  // Scroll to bottom
-  setTimeout(()=>{const tb=document.getElementById('tableBody');if(tb.lastChild)tb.lastChild.scrollIntoView({behavior:'smooth'})},100);
-}
+function addRow(m,p,q,r,c){data.push({m:m||'',p:p||'',q:q||0,r:r||0,c:c||0});save();render()}
+function delRow(i){data.splice(i,1);save();render()}
+function upd(i,f,v){data[i][f]=v;save();render()}
 
-function deleteRow(idx) {
-  data.splice(idx,1); save(); render();
-}
-
-function render() {
-  const tb = document.getElementById('tableBody');
-  tb.innerHTML = data.map((d,i)=>`<tr>
-    <td><input value="${escAttr(d.month)}" onchange="updateField(${i},'month',this.value)" placeholder="1月"></td>
-    <td><input value="${escAttr(d.product)}" onchange="updateField(${i},'product',this.value)" placeholder="产品名"></td>
-    <td><input type="number" value="${d.qty||''}" onchange="updateField(${i},'qty',parseInt(this.value)||0)" placeholder="0" style="text-align:right"></td>
-    <td><input type="number" value="${d.rev||''}" onchange="updateField(${i},'rev',parseFloat(this.value)||0)" placeholder="0" style="text-align:right"></td>
-    <td><button class="btn btn-del" onclick="deleteRow(${i})">✕</button></td>
-  </tr>`).join('');
-
+function render(){
+  const tb=document.getElementById('tableBody');
+  tb.innerHTML=data.map((d,i)=>{
+    const profit=d.r-d.c;
+    const margin=d.r>0?(profit/d.r*100).toFixed(1):0;
+    return `<tr>
+      <td><input value="${esc(d.m)}" onchange="upd(${i},'m',this.value)" placeholder="1月"></td>
+      <td><input value="${esc(d.p)}" onchange="upd(${i},'p',this.value)" placeholder="产品名"></td>
+      <td><input class="num" type="number" value="${d.q||''}" onchange="upd(${i},'q',parseInt(this.value)||0)" placeholder="0"></td>
+      <td><input class="num" type="number" value="${d.r||''}" onchange="upd(${i},'r',parseFloat(this.value)||0)" placeholder="0"></td>
+      <td><input class="num" type="number" value="${d.c||''}" onchange="upd(${i},'c',parseFloat(this.value)||0)" placeholder="0"></td>
+      <td><div class="num auto" style="color:${profit>=0?'#4caf50':'#f44336'}">¥${profit.toLocaleString()}</div></td>
+      <td><div class="num auto" style="color:${margin>=15?'#4caf50':margin>=5?'#ffa726':'#f44336'}">${margin}%</div></td>
+      <td><button class="btn-del" onclick="delRow(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
   calcStats();
-  document.getElementById('rowCount').textContent = `📋 ${data.length} 条记录 | 覆盖 ${[...new Set(data.map(d=>d.month))].length} 个月`;
+  document.getElementById('rowCount').textContent=`📋 ${data.length} 条 | ${[...new Set(data.map(d=>d.m))].length} 个月 | ${[...new Set(data.map(d=>d.p))].filter(Boolean).length} 个产品`;
 }
 
-function updateField(idx,field,val) {
-  data[idx][field] = val; save(); calcStats();
-}
+function esc(t){return (t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-function escAttr(t){return (t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function calcStats(){
+  const months=[...new Set(data.map(d=>d.m))].sort();
+  const products=[...new Set(data.map(d=>d.p))].filter(Boolean);
+  const totalRev=data.reduce((s,d)=>s+d.r,0);
+  const totalCost=data.reduce((s,d)=>s+d.c,0);
+  const totalProfit=totalRev-totalCost;
+  const totalQty=data.reduce((s,d)=>s+d.q,0);
+  const margin=totalRev>0?(totalProfit/totalRev*100).toFixed(1):0;
+  const avgPrice=totalQty>0?totalRev/totalQty:0;
 
-function calcStats() {
-  const months = [...new Set(data.map(d=>d.month))].sort();
-  const products = [...new Set(data.map(d=>d.product))].filter(Boolean);
-  const totalRev = data.reduce((s,d)=>s+d.rev,0);
-  const totalQty = data.reduce((s,d)=>s+d.qty,0);
-  const avgPrice = totalQty > 0 ? totalRev/totalQty : 0;
+  // MoM changes
+  function mom(key){
+    if(months.length<2)return null;
+    const lm=months[months.length-1],pm=months[months.length-2];
+    const cur=data.filter(d=>d.m===lm).reduce((s,d)=>s+d[key],0);
+    const prev=data.filter(d=>d.m===pm).reduce((s,d)=>s+d[key],0);
+    if(prev===0)return null;
+    return ((cur-prev)/prev*100).toFixed(1);
+  }
+  const revC=mom('r'),profitC=mom(p=>{const pr=d=>d.r-d.c;return data.filter(x=>x.m===p).reduce((s,x)=>s+pr(x),0)});
+  const costC=mom('c'),qtyC=mom('q');
 
-  // Month-over-month
-  let prevRev = 0, currRev = 0, prevQty = 0, currQty = 0;
-  if (months.length >= 2) {
-    const last = months[months.length-1];
-    const prev = months[months.length-2];
-    currRev = data.filter(d=>d.month===last).reduce((s,d)=>s+d.rev,0);
-    prevRev = data.filter(d=>d.month===prev).reduce((s,d)=>s+d.rev,0);
-    currQty = data.filter(d=>d.month===last).reduce((s,d)=>s+d.qty,0);
-    prevQty = data.filter(d=>d.month===prev).reduce((s,d)=>s+d.qty,0);
+  // Profit MoM helper
+  let profitCStr=null;
+  if(months.length>=2){
+    const lm=months[months.length-1],pm=months[months.length-2];
+    const curP=data.filter(d=>d.m===lm).reduce((s,d)=>s+(d.r-d.c),0);
+    const prevP=data.filter(d=>d.m===pm).reduce((s,d)=>s+(d.r-d.c),0);
+    if(prevP!==0)profitCStr=((curP-prevP)/prevP*100).toFixed(1);
   }
 
-  const revChange = prevRev > 0 ? ((currRev-prevRev)/prevRev*100).toFixed(1) : 0;
-  const qtyChange = prevQty > 0 ? ((currQty-prevQty)/prevQty*100).toFixed(1) : 0;
+  function fmt(v,prefix,suffix){return v!==null?prefix+Math.abs(v)+suffix:'—'}
+  function cls(v,good=true){if(v===null)return'gray';const n=parseFloat(v);if(good)return n>=0?'green':'red';return n<=0?'green':'red'}
 
-  document.getElementById('kpiRevenue').textContent = '¥' + totalRev.toLocaleString();
-  document.getElementById('kpiQty').textContent = totalQty.toLocaleString();
-  document.getElementById('kpiAvg').textContent = '¥' + avgPrice.toFixed(0);
-  document.getElementById('kpiProducts').textContent = products.length;
-
-  document.getElementById('kpiRevChange').textContent = (revChange>0?'↑ ':'↓ ')+Math.abs(revChange)+'% 环比';
-  document.getElementById('kpiRevChange').className = 's ' + (revChange>=0?'up':'down');
-  document.getElementById('kpiQtyChange').textContent = (qtyChange>0?'↑ ':'↓ ')+Math.abs(qtyChange)+'% 环比';
-  document.getElementById('kpiQtyChange').className = 's ' + (qtyChange>=0?'up':'down');
+  setKPI('kpiRev','¥'+totalRev.toLocaleString(),fmt(revC,revC>=0?'▲ ':'▼ ','% 环比'),cls(revC));
+  setKPI('kpiProfit','¥'+totalProfit.toLocaleString(),fmt(profitCStr,profitCStr>=0?'▲ ':'▼ ','% 环比'),cls(profitCStr));
+  setKPI('kpiMargin',margin+'%',fmt(revC,'','')+'% 利润率','green');
+  setKPI('kpiQty',totalQty.toLocaleString(),fmt(qtyC,qtyC>=0?'▲ ':'▼ ','% 环比'),cls(qtyC));
+  setKPI('kpiAvg','¥'+avgPrice.toFixed(0),'—','gray');
 
   // Top product
-  const prodRev = {};
-  data.forEach(d=>{if(d.product){prodRev[d.product]=(prodRev[d.product]||0)+d.rev;}});
-  const sorted = Object.entries(prodRev).sort((a,b)=>b[1]-a[1]);
-  if (sorted.length) {
-    document.getElementById('kpiTop').textContent = sorted[0][0];
-    document.getElementById('kpiTopVal').textContent = '¥' + sorted[0][1].toLocaleString();
+  const prodP={};
+  data.forEach(d=>{if(d.p){prodP[d.p]=(prodP[d.p]||0)+(d.r-d.c);}});
+  const sorted=Object.entries(prodP).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length){
+    setKPI('kpiTop',sorted[0][0],'利润 ¥'+sorted[0][1].toLocaleString(),'green');
   }
 
-  // Best month
-  const monRev = {};
-  data.forEach(d=>{if(d.month){monRev[d.month]=(monRev[d.month]||0)+d.rev;}});
-  const monSorted = Object.entries(monRev).sort((a,b)=>b[1]-a[1]);
-  if (monSorted.length) {
-    document.getElementById('kpiBestMonth').textContent = monSorted[0][0];
-    document.getElementById('kpiBestVal').textContent = '¥' + monSorted[0][1].toLocaleString();
-  }
-
-  // Trend chart
-  const monRevs = months.map(m=>data.filter(d=>d.month===m).reduce((s,d)=>s+d.rev,0));
-  const monQtys = months.map(m=>data.filter(d=>d.month===m).reduce((s,d)=>s+d.qty,0));
+  // Charts
   destroyCharts();
-  if (months.length) {
-    chart1 = new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:months,datasets:[
-      {label:'销售额',data:monRevs,borderColor:'#667eea',backgroundColor:'rgba(102,126,234,.1)',fill:true,tension:.4,yAxisID:'y'},
-      {label:'销量',data:monQtys,borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,.1)',fill:true,tension:.4,yAxisID:'y1'}
-    ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'},position:'left'},y1:{ticks:{color:'#888'},position:'right',grid:{display:false}}}}});
-    
-    // Bar chart
-    const prodTotalRev = products.map(p=>data.filter(d=>d.product===p).reduce((s,d)=>s+d.rev,0));
-    const colors = ['#667eea','#f093fb','#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4db6ac'];
-    chart2 = new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:products,datasets:[{
-      label:'总销售额',data:prodTotalRev,backgroundColor:colors.slice(0,products.length),borderRadius:6
-    }]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
+  if(months.length){
+    const monRev=months.map(m=>data.filter(d=>d.m===m).reduce((s,d)=>s+d.r,0));
+    const monProfit=months.map(m=>data.filter(d=>d.m===m).reduce((s,d)=>s+(d.r-d.c),0));
+    const monCost=months.map(m=>data.filter(d=>d.m===m).reduce((s,d)=>s+d.c,0));
+    const monQty=months.map(m=>data.filter(d=>d.m===m).reduce((s,d)=>s+d.q,0));
 
-    // Pie chart
-    const prodTotalQty = products.map(p=>data.filter(d=>d.product===p).reduce((s,d)=>s+d.qty,0));
-    chart3 = new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:products,datasets:[{data:prodTotalQty,backgroundColor:colors}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#888',padding:8,font:{size:11}}}}}});
+    c1=new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:months,datasets:[
+      {label:'销售额',data:monRev,borderColor:'#667eea',backgroundColor:'rgba(102,126,234,.1)',fill:true,tension:.4,yAxisID:'y'},
+      {label:'利润',data:monProfit,borderColor:'#4caf50',backgroundColor:'rgba(76,175,80,.1)',fill:true,tension:.4,yAxisID:'y'}
+    ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:10}}}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
 
-    // Stacked bar
-    chart4 = new Chart(document.getElementById('stackChart'),{type:'bar',data:{labels:months,datasets:products.map((p,i)=>({label:p,data:months.map(m=>data.filter(d=>d.month===m&&d.product===p).reduce((s,d)=>s+d.rev,0)),backgroundColor:colors[i%colors.length]}))},options:{responsive:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:'#888'}},y:{stacked:true,ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
+    const prodProfit=products.map(p=>data.filter(d=>d.p===p).reduce((s,d)=>s+(d.r-d.c),0));
+    const colors=['#667eea','#f093fb','#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4db6ac'];
+    const barColors=prodProfit.map(v=>v>=0?'#4caf50':'#f44336');
+    c2=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:products,datasets:[{label:'利润',data:prodProfit,backgroundColor:colors.slice(0,products.length),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'}},y:{ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
+
+    c3=new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:['利润','成本'],datasets:[{data:[totalProfit,totalCost],backgroundColor:['#4caf50','#f4433699']}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#888',padding:8,font:{size:11}}}}}});
+
+    c4=new Chart(document.getElementById('stackChart'),{type:'bar',data:{labels:months,datasets:[
+      {label:'利润',data:monProfit,backgroundColor:'#4caf50',borderRadius:4},
+      {label:'成本',data:monCost,backgroundColor:'#f4433699',borderRadius:4}
+    ]},options:{responsive:true,plugins:{legend:{labels:{color:'#888',boxWidth:12,font:{size:10}}}},scales:{x:{stacked:true,ticks:{color:'#888'}},y:{stacked:true,ticks:{color:'#888',callback:v=>'¥'+(v/1000|0)+'k'}}}}});
   }
 }
 
-function destroyCharts(){
-  [chart1,chart2,chart3,chart4].forEach(c=>{if(c)c.destroy();chart1=chart2=chart3=chart4=null;});
+function setKPI(id,val,sub,cls){
+  document.getElementById(id).textContent=val;
+  const el=document.getElementById(id+sub?'C':'');
+  // Map ids to sub elements
+  const subMap={kpiRev:'kpiRevC',kpiProfit:'kpiProfitC',kpiMargin:'kpiMarginC',kpiQty:'kpiQtyC'};
+  const subEl=document.getElementById(subMap[id]);
+  if(subEl){subEl.textContent=sub;subEl.className='s '+cls;}
 }
 
-function exportCSV() {
-  let csv = '月份,产品,销量,销售额\n';
-  data.forEach(d=>{csv+=`${d.month},${d.product},${d.qty},${d.rev}\n`;});
-  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = '销售数据.csv';
-  link.click();
+function setKPI(id,val,sub,cls){
+  document.getElementById(id).textContent=val;
+  const subMap={kpiRev:'kpiRevC',kpiProfit:'kpiProfitC',kpiMargin:'kpiMarginC',kpiQty:'kpiQtyC'};
+  const se=document.getElementById(subMap[id]);
+  if(se){se.textContent=sub;se.className='s '+cls;}
+}
+// Fix kpiTopVal
+document.addEventListener('DOMContentLoaded',()=>{
+  const ot=document.getElementById('kpiTopVal');
+  if(ot)ot.className='s gray';
+});
+
+function destroyCharts(){[c1,c2,c3,c4].forEach(c=>{if(c)c.destroy();c1=c2=c3=c4=null})}
+
+function exportCSV(){
+  let csv='月份,产品,销量,销售额,成本,利润,利润率\n';
+  data.forEach(d=>{const profit=d.r-d.c;const m=d.r>0?(profit/d.r*100).toFixed(1):0;csv+=`${d.m},${d.p},${d.q},${d.r},${d.c},${profit},${m}%\n`});
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='销售数据.csv';a.click();
 }
 
 load();

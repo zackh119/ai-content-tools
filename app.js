@@ -1,44 +1,41 @@
 const API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DAILY_LIMIT = 30;
 
-let selectedTitle = '', lastFullContent = '', currentPlatform = 'xiaohongshu';
+let selectedTitle = '', lastFullContent = '', lastBody = '', lastTags = '', currentPlatform = 'xiaohongshu';
 
 // ====== Platform definitions ======
 const P = {
   xiaohongshu: {
-    label: '小红书',
-    placeholder: '推荐5款适合学生党的平价护肤品',
+    label: '小红书', placeholder: '推荐5款适合学生党的平价护肤品',
     styles: ['种草推荐','干货分享','情感故事','教程攻略','生活记录','避坑指南'],
     tones: ['亲切自然','专业权威','幽默风趣','温暖治愈','犀利直白'],
     lengths: [['短篇~300字','S'],['中篇~600字','M'],['长篇~1000字','L']],
-    features: [['🔥','种草推荐','好物分享、测评推荐'],['📚','干货分享','知识科普、经验总结'],['💕','情感故事','心情记录、生活感悟'],['🎯','教程攻略','Step-by-step 指南'],['☀️','生活记录','日常分享、Vlog 文案'],['⚠️','避坑指南','踩坑经历、防坑建议']],
+    features: [['🔥','种草推荐','好物分享、测评推荐'],['📚','干货分享','知识科普、经验总结'],['💕','情感故事','心情记录、生活感悟'],['🎯','教程攻略','Step-by-step 指南'],['☀️','生活记录','日常分享'],['⚠️','避坑指南','踩坑经历、防坑建议']],
     quickRefines: ['多发点emoji，更活泼','缩短一半，更精炼','换个吸引人的角度','语气再口语化一点'],
-    titlePrompt: '你是一位真实的小红书博主。请为主题生成5个爆款标题。要求：每个标题要抓人，用数字、悬念、强烈态度、反差感；符合小红书风格，口语化、带emoji；5个标题要有不同切入角度；不要用"值得注意的是"、"总而言之"、"不可否认"。直接输出5行，每行一个标题，不要序号。',
-    fullPrompt: '你是一位真实的小红书博主。根据选定的标题和主题写一篇完整笔记。语言：像跟闺蜜聊天，口语化、带情绪，用"我"来写。排版：段落短（1-3行一段），多用破折号和省略号，emoji自然插入。禁用词："值得注意的是"、"不难发现"、"基于以上分析"、"总而言之"、"不可否认"、"值得一提的是"、"综上所述"。内容：不要干巴巴列1234，用具体感受和细节，Show don\'t tell。结尾：不要总结，用互动结尾（问读者问题）。格式：先输出标题（直接使用选定标题），空一行，正文，最后换行加标签。',
+    titlePrompt: '你是一位真实的小红书博主。请为主题生成5个爆款标题。要求：每个标题要抓人，用数字、悬念、强烈态度、反差感；符合小红书风格，口语化、带emoji；5个标题要有不同切入角度。直接输出5行，每行一个标题，不要序号。',
+    fullPrompt: '你是一位真实的小红书博主。根据选定的标题和主题写一篇完整笔记。语言：像跟闺蜜聊天，口语化、带情绪，用"我"来写。排版：段落短（1-3行一段），多用破折号和省略号，emoji自然插入。禁用词："值得注意的是"、"不难发现"、"基于以上分析"、"总而言之"、"不可否认"、"值得一提的是"、"综上所述"。内容：不要干巴巴列1234，用具体感受和细节。结尾：不要总结，用互动结尾。格式：先输出标题（直接使用选定标题），空一行，正文，最后换行加标签。',
     tokenMap: { S: 400, M: 800, L: 1200 }
   },
   douyin: {
-    label: '抖音',
-    placeholder: '5个让你工作效率翻倍的隐藏技巧',
+    label: '抖音', placeholder: '5个让你工作效率翻倍的隐藏技巧',
     styles: ['好物测评','知识科普','情感共鸣','生活Vlog','教程教学','热点评论'],
     tones: ['亲切自然','幽默风趣','温暖治愈','犀利直白','热血励志'],
     lengths: [['15秒快稿','XS'],['30秒标准','S'],['60秒完整','M'],['90秒深度','L']],
     features: [['🛒','好物测评','产品开箱、使用体验'],['🧠','知识科普','冷知识、原理讲解'],['💞','情感共鸣','故事分享、情绪价值'],['🎬','生活Vlog','日常记录、旅行分享'],['📖','教程教学','技巧教学、步骤演示'],['🔥','热点评论','时事点评、观点输出']],
     quickRefines: ['开头再爆一点','缩短到15秒版本','加更多画面描述','换个话题角度切入'],
-    titlePrompt: '你是一位抖音短视频创作者。请为主题生成5个引人注目的视频标题/话题。要求：标题在3秒内抓住注意力，用数字、悬念、反差、争议手法；口语化，像在跟朋友说话。直接输出5行，每行一个标题，不要序号。',
-    fullPrompt: '你是一位抖音短视频创作者。根据选定的标题和主题写一份完整的短视频脚本。\n\n格式要求：\n【开场】\n画面：场景、动作、表情描述\n口播：配音文案\n字幕：屏幕文字\n\n【主体】\n画面：\n口播：\n字幕：\n\n（根据需要分2-3段主体）\n\n【结尾】\n画面：\n口播：\n字幕：\n\n要求：开头3秒要有钩子；口语化，节奏紧凑；口播和字幕要区分开；结尾引导互动。\n\n格式：先输出标题行，空一行，再写完整脚本。',
+    titlePrompt: '你是一位抖音短视频创作者。请为主题生成5个引人注目的视频标题/话题。要求：标题在3秒内抓住注意力，用数字、悬念、反差、争议手法；口语化。直接输出5行，每行一个标题。',
+    fullPrompt: '你是一位抖音短视频创作者。根据选定的标题和主题写一份完整的短视频脚本。\n\n格式：\n【开场】画面：场景描述 口播：配音文案 字幕：屏幕文字\n【主体】画面：口播：字幕：\n（分2-3段）\n【结尾】画面：口播：字幕：\n\n要求：开头3秒要有钩子；口语化，节奏紧凑。\n\n格式：先输出标题行，空一行，再写完整脚本。',
     tokenMap: { XS: 300, S: 500, M: 800, L: 1200 }
   },
   gongzhonghao: {
-    label: '公众号',
-    placeholder: '2025年最值得关注的AI趋势',
+    label: '公众号', placeholder: '2025年最值得关注的AI趋势',
     styles: ['行业分析','干货教程','情感故事','时事评论','产品评测','人物访谈'],
     tones: ['专业权威','亲切自然','深度理性','温暖治愈','犀利观点'],
     lengths: [['短篇~800字','S'],['中篇~1500字','M'],['长篇~2500字','L']],
     features: [['📊','行业分析','趋势解读、数据洞察'],['📖','干货教程','知识教学、实操指南'],['💞','情感故事','真实故事、情感共鸣'],['📰','时事评论','热点分析、观点输出'],['🔬','产品评测','深度测评、对比分析'],['👤','人物访谈','人物故事、经验分享']],
     quickRefines: ['加更多数据和案例','语气更通俗易懂','缩短到800字以内','开头更有吸引力'],
-    titlePrompt: '你是一位资深公众号作者。请为主题生成5个吸引点击的文章标题。要求：标题有信息量和吸引力，可用数字、问句、悬念；符合公众号读者阅读习惯，不太夸张。直接输出5行，每行一个标题，不要序号。',
-    fullPrompt: '你是一位资深公众号作者。根据选定的标题和主题写一篇完整的公众号文章。\n\n格式要求：开头有导语吸引阅读；正文用小标题分段（用【】标记）；每段不要太长；可引用数据案例增强说服力；结尾引导互动（点赞、在看、关注、评论）。\n\n语言风格：根据所选语气调整；专业但不晦涩，通俗但不肤浅；有观点有态度。\n\n格式：先输出标题行，空一行，再写正文。',
+    titlePrompt: '你是一位资深公众号作者。请为主题生成5个吸引点击的文章标题。要求：标题有信息量和吸引力，可用数字、问句、悬念；符合公众号读者阅读习惯。直接输出5行，每行一个标题。',
+    fullPrompt: '你是一位资深公众号作者。根据选定的标题和主题写一篇完整的公众号文章。\n\n格式：开头有导语；正文用小标题分段（用【】标记）；每段不要太长；可引用数据案例；结尾引导互动。\n\n语言：根据所选语气调整；专业但不晦涩。\n\n格式：先输出标题行，空一行，再写正文。',
     tokenMap: { S: 1200, M: 2000, L: 3500 }
   }
 };
@@ -50,31 +47,25 @@ function initPlatform(platform) {
   document.getElementById('topic').placeholder = cfg.placeholder;
   document.getElementById('toolDesc').textContent = '输入主题 → 挑选' + cfg.label + '标题 → 一键生成全文';
 
-  // Styles
   const sSel = document.getElementById('styleSelect');
   sSel.innerHTML = cfg.styles.map(s => '<option value="' + s + '">' + s + '</option>').join('');
 
-  // Tones
   const tSel = document.getElementById('toneSelect');
   tSel.innerHTML = cfg.tones.map(s => '<option value="' + s + '">' + s + '</option>').join('');
 
-  // Lengths
   const lSel = document.getElementById('lengthSelect');
   lSel.innerHTML = cfg.lengths.map(([label, val]) => '<option value="' + val + '">' + label + '</option>').join('');
 
-  // Quick refine buttons
   document.getElementById('quickRefines').innerHTML = cfg.quickRefines.map(s =>
-    '<button class="btn btn-tag" onclick=\'quickRefine("' + s + '")\'>' + s + '</button>'
+    '<button class="btn btn-tag" onclick="quickRefine(\'' + s + '\')">' + s + '</button>'
   ).join('');
 
-  // Features
   document.getElementById('featuresTitle').textContent = cfg.label + '支持的内容类型';
   document.getElementById('featuresGrid').innerHTML = cfg.features.map(([icon, name, desc]) =>
     '<div class="feature-item"><div class="feature-icon">' + icon + '</div><div class="feature-text">' + name + '<br><small>' + desc + '</small></div></div>'
   ).join('');
 
-  // Reset
-  selectedTitle = ''; lastFullContent = '';
+  selectedTitle = ''; lastFullContent = ''; lastBody = ''; lastTags = '';
   document.getElementById('titleSection').style.display = 'none';
   document.getElementById('outputSection').style.display = 'none';
   document.getElementById('errorSection').style.display = 'none';
@@ -183,6 +174,60 @@ async function generatePost() {
   displayResult(selectedTitle, result);
 }
 
+// ====== Parse tags from content ======
+function parseTags(content) {
+  const lines = content.split('\n');
+  const tagLines = lines.filter(l => l.trim().startsWith('#'));
+  const bodyLines = lines.filter(l => !l.trim().startsWith('#'));
+  return {
+    tags: tagLines.join(' ').trim(),
+    body: bodyLines.join('\n').trim()
+  };
+}
+
+// ====== Display ======
+function displayResult(title, raw) {
+  let t = title || '', body = raw;
+  const m = raw.match(/(?:^|\n)标题[：:]\s*(.+?)(?:\n|$)/);
+  if (m) { t = m[1].trim(); body = raw.replace(m[0], '').trim(); }
+  
+  const parsed = parseTags(body);
+  selectedTitle = t; lastBody = parsed.body; lastTags = parsed.tags;
+  lastFullContent = t + '\n\n' + parsed.body + '\n\n' + parsed.tags;
+  
+  $('outputTitle').textContent = t;
+  $('outputBody').textContent = parsed.body;
+  $('outputTags').textContent = parsed.tags || '(无标签)';
+  
+  $('titleSection').style.display = 'none'; $('outputSection').style.display = '';
+  $('refineInput').value = '';
+  
+  // Update copy buttons
+  $('copyTitleBtn').onclick = function() { copyToClipboard(t, '标题已复制'); };
+  $('copyBodyBtn').onclick = function() { copyToClipboard(parsed.body, '正文已复制'); };
+  $('copyTagsBtn').onclick = function() { copyToClipboard(parsed.tags, '标签已复制'); };
+  $('copyAllBtn').onclick = function() { copyToClipboard(lastFullContent, '全部内容已复制'); };
+  
+  window.scrollTo({ top: $('outputSection').offsetTop - 80, behavior: 'smooth' });
+}
+
+// ====== Copy ======
+function copyToClipboard(text, msg) {
+  if (!text) { showToast('没有内容可复制'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast(msg))
+      .catch(() => fallbackCopy(text, msg));
+  } else { fallbackCopy(text, msg); }
+}
+function fallbackCopy(text, msg) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast(msg); }
+  catch (e) { showToast('复制失败'); }
+  document.body.removeChild(ta);
+}
+
 // ====== Refine ======
 async function refine() {
   const inst = $('refineInput').value.trim();
@@ -202,38 +247,16 @@ async function doRefine(inst) {
   showToast('已按你的要求重新生成');
 }
 
-// ====== Display ======
-function displayResult(title, raw) {
-  let t = title || '', body = raw;
-  const m = raw.match(/(?:^|\n)标题[：:]\s*(.+?)(?:\n|$)/);
-  if (m) { t = m[1].trim(); body = raw.replace(m[0], '').trim(); }
-  selectedTitle = t; lastFullContent = t + '\n\n' + body;
-  $('outputTitle').textContent = t; $('outputBody').textContent = body;
-  $('titleSection').style.display = 'none'; $('outputSection').style.display = '';
-  $('refineInput').value = '';
-  window.scrollTo({ top: $('outputSection').offsetTop - 80, behavior: 'smooth' });
+function resetAll() {
+  selectedTitle = ''; lastFullContent = ''; lastBody = ''; lastTags = '';
+  $('outputSection').style.display = 'none'; $('titleSection').style.display = 'none'; hideError();
+  $('topic').focus();
 }
-
-// ====== Actions ======
-function copyContent() {
-  const text = lastFullContent; if (!text) return;
-  if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(text).then(() => showToast('已复制')).catch(() => fallbackCopy(text)); }
-  else fallbackCopy(text);
-}
-function fallbackCopy(t) {
-  const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); showToast('已复制'); } catch(e) { showToast('复制失败'); }
-  document.body.removeChild(ta);
-}
-function resetAll() { selectedTitle = ''; lastFullContent = ''; $('outputSection').style.display = 'none'; $('titleSection').style.display = 'none'; hideError(); $('topic').focus(); }
 
 // ====== Events ======
 document.addEventListener('DOMContentLoaded', () => {
-  // Init default platform
   initPlatform('xiaohongshu');
 
-  // Platform tabs
   document.getElementById('platformTabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.platform-tab');
     if (!tab) return;
@@ -242,15 +265,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initPlatform(tab.dataset.platform);
   });
 
-  // Buttons
   $('genTitleBtn').onclick = generateTitles;
   $('regenerateTitlesBtn').onclick = generateTitles;
   $('genPostBtn').onclick = generatePost;
-  $('copyBtn').onclick = copyContent;
   $('resetBtn').onclick = resetAll;
   $('refineBtn').onclick = refine;
 
-  // Enter key
   $('topic').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateTitles(); } });
   $('refineInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); refine(); } });
 

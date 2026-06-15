@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 内容工具箱 - 小红书/抖音/公众号 文案生成</title>
+<title>AI 内容工具箱 - 小红书/抖音/公众号 内容生成</title>
 <meta name="description" content="一站式内容创作工具。支持小红书爆款文案、抖音短视频脚本、公众号长文。先选标题再写全文，不满意还能精修。">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -12,14 +12,13 @@
 <header class="header">
   <div class="container">
     <h1 class="logo">AI 内容工具箱</h1>
-    <p class="tagline">小红书 · 抖音 · 公众号 · 一个工具全搞定</p>
+    <p class="tagline">小红书 · 抖音 · 公众号 · 一键复制到剪贴板</p>
   </div>
 </header>
 
 <main class="main container">
   <div class="tool-card">
     <div class="tool-header">
-      <!-- Platform tabs -->
       <div class="platform-tabs" id="platformTabs">
         <button class="platform-tab active" data-platform="xiaohongshu">🔥 小红书</button>
         <button class="platform-tab" data-platform="douyin">🎬 抖音脚本</button>
@@ -29,14 +28,13 @@
     </div>
 
     <div class="tool-body">
-      <!-- Input -->
       <div class="input-section">
         <div class="form-group">
-          <label for="topic" id="topicLabel">写作主题 <span class="required">*</span></label>
+          <label for="topic">写作主题 <span class="required">*</span></label>
           <textarea id="topic" placeholder="" rows="3"></textarea>
         </div>
 
-        <div class="form-row" id="formRow">
+        <div class="form-row">
           <div class="form-group">
             <label for="styleSelect">内容风格</label>
             <select id="styleSelect"></select>
@@ -61,7 +59,7 @@
       <!-- Titles -->
       <div id="titleSection" class="title-section" style="display:none">
         <div class="title-header">
-          <h3 id="titleSectionTitle">选择一个标题</h3>
+          <h3>选择一个标题</h3>
           <button class="btn btn-sm" id="regenerateTitlesBtn">🔄 换一批</button>
         </div>
         <div id="titleList" class="title-list"></div>
@@ -77,15 +75,41 @@
         <div class="output-header">
           <h3>生成结果</h3>
           <div class="output-actions">
-            <button class="btn btn-sm" id="copyBtn">📋 复制</button>
             <button class="btn btn-sm" id="resetBtn">🔄 重写一篇</button>
           </div>
         </div>
-        <div class="output-content" id="outputContent">
-          <div class="output-title" id="outputTitle"></div>
-          <div class="output-body" id="outputBody"></div>
+
+        <!-- Title -->
+        <div class="copy-card">
+          <div class="copy-card-header">
+            <span>📌 标题</span>
+            <button class="btn btn-sm copy-btn" id="copyTitleBtn">📋 复制标题</button>
+          </div>
+          <div class="copy-card-body output-title" id="outputTitle"></div>
         </div>
 
+        <!-- Body -->
+        <div class="copy-card">
+          <div class="copy-card-header">
+            <span>📝 正文</span>
+            <button class="btn btn-sm copy-btn" id="copyBodyBtn">📋 复制正文</button>
+          </div>
+          <div class="copy-card-body output-body" id="outputBody"></div>
+        </div>
+
+        <!-- Tags -->
+        <div class="copy-card">
+          <div class="copy-card-header">
+            <span>🏷️ 标签</span>
+            <button class="btn btn-sm copy-btn" id="copyTagsBtn">📋 复制标签</button>
+          </div>
+          <div class="copy-card-body output-tags" id="outputTags"></div>
+        </div>
+
+        <!-- Copy all -->
+        <button class="btn btn-primary" id="copyAllBtn" style="margin-top:12px">📋 一键复制全部内容</button>
+
+        <!-- Refine -->
         <div class="refine-section">
           <label>不满意？告诉我想怎么改</label>
           <div class="refine-row">
@@ -102,7 +126,7 @@
     </div>
   </div>
 
-  <div class="features-section" id="featuresSection">
+  <div class="features-section">
     <h3 id="featuresTitle">支持的内容类型</h3>
     <div class="features-grid" id="featuresGrid"></div>
   </div>

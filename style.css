@@ -33,7 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .platform-tab:hover{color:#333}
 .platform-tab.active{background:#fff;color:#1a1a2e;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 
-/* Title section */
+/* Titles */
 .title-section{margin-top:18px;border-top:1px solid #eee;padding-top:18px}
 .title-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .title-header h3{font-size:14px;font-weight:600}
@@ -47,10 +47,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .output-section{margin-top:18px;border-top:1px solid #eee;padding-top:18px}
 .output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .output-header h3{font-size:14px;font-weight:600}
-.output-actions{display:flex;gap:6px}
-.output-content{background:#f9faff;border:1px solid #e8ecf4;border-radius:10px;padding:18px 20px;white-space:pre-wrap;word-wrap:break-word;font-size:13px;line-height:1.75}
-.output-title{font-size:17px;font-weight:700;margin-bottom:12px;color:#1a1a2e}
+
+/* Copy cards */
+.copy-card{border:1px solid #e8ecf4;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.copy-card-header{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#f9faff;border-bottom:1px solid #e8ecf4;font-size:13px;font-weight:600}
+.copy-card-body{padding:12px 14px;font-size:13px;line-height:1.75;white-space:pre-wrap;word-wrap:break-word}
+.output-title{font-size:17px;font-weight:700;color:#1a1a2e}
 .output-body{color:#333}
+.output-tags{color:#667eea;font-size:12px}
+.copy-btn{background:#eef0ff;border-color:#d0d5ff;color:#667eea}
+.copy-btn:hover{background:#e0e3ff}
 
 /* Refine */
 .refine-section{margin-top:14px}
@@ -79,4 +85,4 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
 
-@media(max-width:640px){.header{padding:24px 0 20px}.logo{font-size:22px}.tool-header{padding:16px 16px 0}.tool-body{padding:12px 16px 24px}.form-row{grid-template-columns:1fr;gap:0}.features-grid{grid-template-columns:1fr 1fr}.output-header{flex-direction:column;align-items:flex-start;gap:8px}.platform-tab{font-size:12px;padding:7px 6px}}
+@media(max-width:640px){.header{padding:24px 0 20px}.logo{font-size:22px}.tool-header{padding:16px 16px 0}.tool-body{padding:12px 16px 24px}.form-row{grid-template-columns:1fr;gap:0}.features-grid{grid-template-columns:1fr 1fr}.platform-tab{font-size:12px;padding:7px 6px}}

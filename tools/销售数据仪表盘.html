@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>销售数据可视化仪表盘</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:30px 40px;border-bottom:1px solid #2a2a4a}
+.header h1{font-size:24px;color:#fff}
+.header p{font-size:13px;color:#888;margin-top:4px}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a}
+.kpi-card .label{font-size:12px;color:#888;margin-bottom:6px}
+.kpi-card .value{font-size:28px;font-weight:700;color:#fff}
+.kpi-card .change{font-size:12px;margin-top:4px}
+.kpi-card.up .change{color:#4caf50}
+.kpi-card.down .change{color:#f44336}
+
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a}
+.chart-card h3{font-size:14px;color:#aaa;margin-bottom:16px}
+.chart-card canvas{width:100%!important;max-height:280px}
+
+.table-card{background:#1a1a2e;border-radius:12px;padding:20px;border:1px solid #2a2a4a;margin-bottom:24px}
+.table-card h3{font-size:14px;color:#aaa;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;background:#2a2a4a;color:#aaa;font-weight:500}
+td{padding:10px 12px;border-bottom:1px solid #2a2a4a}
+tr:hover td{background:#1f1f35}
+.positive{color:#4caf50}
+.negative{color:#f44336}
+
+.data-input{margin-bottom:24px}
+.data-input textarea{width:100%;padding:12px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:13px;font-family:monospace;resize:vertical;min-height:100px}
+.data-input textarea:focus{outline:none;border-color:#667eea}
+.data-input .btn{background:#667eea;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;margin-top:8px;font-weight:600}
+.data-input .btn:hover{background:#5a6fd6}
+.data-input .hint{font-size:11px;color:#666;margin-top:6px}
+
+.export-bar{display:flex;gap:8px;margin-bottom:16px}
+.export-bar .btn{background:#2a2a4a;color:#e0e0e0;border:1px solid #3a3a5a;padding:8px 20px;border-radius:8px;font-size:13px;cursor:pointer}
+.export-bar .btn:hover{background:#3a3a5a}
+
+@media(max-width:768px){.kpi-row,.chart-row{grid-template-columns:1fr}.header{padding:20px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 销售数据分析仪表盘</h1>
+  <p>拖入数据 · 自动分析 · 可视化呈现</p>
+</div>
+
+<div class="container">
+  <div class="data-input">
+    <textarea id="dataInput" rows="4">产品A,1月,120,15000
+产品B,1月,85,10200
+产品C,1月,200,18000
+产品A,2月,150,18750
+产品B,2月,110,13200
+产品C,2月,180,16200
+产品A,3月,200,25000
+产品B,3月,95,11400
+产品C,3月,220,19800</textarea>
+    <button class="btn" onclick="updateDashboard()">🔄 更新分析</button>
+    <div class="hint">格式：产品名,月份,销量,销售额。每行一条，用逗号分隔</div>
+  </div>
+
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card"><div class="label">总销售额</div><div class="value" id="totalRevenue">0</div><div class="change">↑ 12.5%</div></div>
+    <div class="kpi-card"><div class="label">总销量</div><div class="value" id="totalSales">0</div><div class="change">↑ 8.3%</div></div>
+    <div class="kpi-card"><div class="label">平均客单价</div><div class="value" id="avgPrice">0</div><div class="change">↑ 3.2%</div></div>
+    <div class="kpi-card"><div class="label">产品数</div><div class="value" id="productCount">0</div><div class="change">—</div></div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card"><h3>📈 月度销售额趋势</h3><canvas id="trendChart"></canvas></div>
+    <div class="chart-card"><h3>📊 产品销量对比</h3><canvas id="barChart"></canvas></div>
+  </div>
+
+  <div class="table-card">
+    <h3>📋 详细数据</h3>
+    <table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
+  </div>
+</div>
+
+<script>
+let chart1 = null, chart2 = null;
+
+function parseData(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  const parsed = { products: [], months: [], rows: [] };
+  const seen = {};
+  
+  lines.forEach(line => {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length < 3) return;
+    const [product, month, qty, revenue] = parts;
+    const q = parseInt(qty) || 0;
+    const r = parseFloat(revenue) || 0;
+    if (!seen[product]) { seen[product] = true; parsed.products.push(product); }
+    if (!seen['m_' + month]) { seen['m_' + month] = true; parsed.months.push(month); }
+    parsed.rows.push({ product, month, qty: q, revenue: r });
+  });
+  return parsed;
+}
+
+function updateDashboard() {
+  const raw = document.getElementById('dataInput').value;
+  const data = parseData(raw);
+  if (data.rows.length === 0) return;
+
+  // KPIs
+  const totalRev = data.rows.reduce((s, r) => s + r.revenue, 0);
+  const totalQty = data.rows.reduce((s, r) => s + r.qty, 0);
+  const avgPrice = totalQty > 0 ? (totalRev / totalQty).toFixed(0) : 0;
+  document.getElementById('totalRevenue').textContent = '¥' + totalRev.toLocaleString();
+  document.getElementById('totalSales').textContent = totalQty.toLocaleString();
+  document.getElementById('avgPrice').textContent = '¥' + avgPrice;
+  document.getElementById('productCount').textContent = data.products.length;
+
+  // Table
+  const allMonths = [...new Set(data.rows.map(r => r.month))];
+  let tableHTML = '<tr><th>产品</th>';
+  allMonths.forEach(m => { tableHTML += '<th>' + m + '</th>'; });
+  tableHTML += '<th>合计</th></tr>';
+  
+  data.products.forEach(p => {
+    const pRows = data.rows.filter(r => r.product === p);
+    const total = pRows.reduce((s, r) => s + r.revenue, 0);
+    tableHTML += '<tr><td><strong>' + p + '</strong></td>';
+    allMonths.forEach(m => {
+      const r = pRows.find(r => r.month === m);
+      tableHTML += '<td>' + (r ? '¥' + r.revenue.toLocaleString() : '-') + '</td>';
+    });
+    tableHTML += '<td class="positive">¥' + total.toLocaleString() + '</td></tr>';
+  });
+  document.getElementById('tableHead').innerHTML = '<tr><th>产品</th>' + allMonths.map(m => '<th>' + m + '</th>').join('') + '<th>合计</th></tr>';
+  document.getElementById('tableBody').innerHTML = tableHTML;
+
+  // Trend chart (monthly revenue)
+  const months = [...new Set(data.rows.map(r => r.month))];
+  const monthlyRev = months.map(m => data.rows.filter(r => r.month === m).reduce((s, r) => s + r.revenue, 0));
+  
+  if (chart1) chart1.destroy();
+  chart1 = new Chart(document.getElementById('trendChart'), {
+    type: 'line', data: {
+      labels: months,
+      datasets: [{ label: '销售额', data: monthlyRev, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,.1)', fill: true, tension: .4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888', callback: v => '¥' + v/1000 + 'k' } } } }
+  });
+
+  // Bar chart (product comparison)
+  const prodTotals = data.products.map(p => data.rows.filter(r => r.product === p).reduce((s, r) => s + r.revenue, 0));
+  const colors = ['#667eea', '#f093fb', '#4fc3f7', '#81c784', '#ffb74d', '#e57373'];
+  
+  if (chart2) chart2.destroy();
+  chart2 = new Chart(document.getElementById('barChart'), {
+    type: 'bar', data: {
+      labels: data.products,
+      datasets: [{ label: '总销售额', data: prodTotals, backgroundColor: colors.slice(0, data.products.length), borderRadius: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888', callback: v => '¥' + v/1000 + 'k' } } } }
+  });
+}
+
+function exportChart() {
+  const c = document.getElementById('trendChart');
+  const link = document.createElement('a');
+  link.download = '销售趋势图.png';
+  link.href = c.toDataURL('image/png');
+  link.click();
+}
+
+updateDashboard();
+</script>
+</body>
+</html>

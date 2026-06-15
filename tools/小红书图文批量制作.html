@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书图文批量制作工具</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:#f0f2f5;color:#1a1a2e;display:flex;min-height:100vh}
+.sidebar{width:400px;background:#fff;padding:20px;overflow-y:auto;border-right:1px solid #e8e8e8}
+.preview{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;background:#f0f2f5}
+h1{font-size:18px;margin-bottom:20px;color:#333}
+.section{margin-bottom:16px}
+.section label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px}
+.section textarea,.section input{width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical}
+.section textarea:focus,.section input:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 2px rgba(102,126,234,.15)}
+.posts-list{margin-top:12px}
+.post-item{background:#f9faff;border:1px solid #e8ecf4;border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;font-size:12px}
+.post-item.active{border-color:#667eea;background:#eef0ff}
+.post-item .title{font-weight:600;margin-bottom:2px}
+.post-item .preview-text{color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{display:block;width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-primary{background:#667eea;color:#fff}
+.btn-primary:hover{background:#5a6fd6}
+.btn-success{background:#52c41a;color:#fff}
+.btn-success:hover{background:#49b018}
+.template-select{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.template-btn{padding:6px 14px;border:2px solid #e0e3e8;border-radius:6px;font-size:12px;cursor:pointer;background:#fff}
+.template-btn.active{border-color:#667eea;background:#eef0ff;font-weight:600}
+
+/* Canvas preview */
+.canvas-wrapper{background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;width:360px}
+.canvas-header{background:#ff2440;color:#fff;padding:14px 20px;font-size:14px;font-weight:700}
+.canvas-image{width:100%;height:200px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:13px;color:#999;position:relative;overflow:hidden}
+.canvas-image .placeholder{font-size:40px;opacity:.3}
+.canvas-body{padding:16px 20px}
+.canvas-body .post-title{font-size:18px;font-weight:700;margin-bottom:10px;line-height:1.5;color:#1a1a2e}
+.canvas-body .post-content{font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap}
+.canvas-body .post-tags{margin-top:12px;font-size:11px;color:#667eea}
+.canvas-footer{background:#f9f9f9;padding:10px 20px;font-size:10px;color:#bbb;text-align:center}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>📱 小红书图文批量制作</h1>
+
+  <div class="section">
+    <label>选择模板</label>
+    <div class="template-select" id="templateSelect">
+      <button class="template-btn active" data-tpl="clean">简约白</button>
+      <button class="template-btn" data-tpl="warm">温暖米</button>
+      <button class="template-btn" data-tpl="tech">科技蓝</button>
+      <button class="template-btn" data-tpl="pink">甜美粉</button>
+    </div>
+  </div>
+
+  <div id="editorSection">
+    <div class="section">
+      <label>标题</label>
+      <input id="editTitle" placeholder="输入标题..." />
+    </div>
+    <div class="section">
+      <label>正文</label>
+      <textarea id="editContent" rows="6" placeholder="输入正文内容..."></textarea>
+    </div>
+    <div class="section">
+      <label>标签（空格分隔）</label>
+      <input id="editTags" placeholder="#小红书运营 #文案工具" />
+    </div>
+  </div>
+
+  <button class="btn btn-success" id="addPostBtn">➕ 添加到批量列表</button>
+  <button class="btn btn-primary" id="exportBtn">📥 批量导出全部图片</button>
+
+  <div class="posts-list" id="postsList">
+    <div style="text-align:center;color:#bbb;font-size:12px;padding:20px">还没有内容，输入后点击添加</div>
+  </div>
+</div>
+
+<div class="preview">
+  <div class="canvas-wrapper" id="canvasWrapper" style="width:360px;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden">
+    <div id="previewTitle" style="font-size:18px;font-weight:700;padding:20px 20px 10px;line-height:1.5">预览区域</div>
+    <div id="previewContent" style="font-size:13px;padding:0 20px 20px;line-height:1.8;color:#333;white-space:pre-wrap">输入内容后实时预览</div>
+  </div>
+</div>
+
+<script>
+const posts = [];
+let currentEdit = -1;
+
+function getTemplateColors(tpl) {
+  const map = {
+    clean: { header:'#ff2440', tags:'#667eea', bg:'#fff', text:'#1a1a2e', body:'#333' },
+    warm: { header:'#d4a574', tags:'#d4a574', bg:'#fef9f4', text:'#5a3e2b', body:'#6b5340' },
+    tech: { header:'#1a1a2e', tags:'#667eea', bg:'#f5f7ff', text:'#1a1a2e', body:'#2d3748' },
+    pink: { header:'#ff6b9d', tags:'#ff6b9d', bg:'#fff5f8', text:'#5a2d45', body:'#7a4d65' },
+  };
+  return map[tpl] || map.clean;
+}
+
+function renderPreview() {
+  const tpl = document.querySelector('.template-btn.active').dataset.tpl;
+  const colors = getTemplateColors(tpl);
+  const wrapper = document.getElementById('canvasWrapper');
+  const title = document.getElementById('editTitle').value || '标题';
+  const content = document.getElementById('editContent').value || '正文内容';
+  const tags = document.getElementById('editTags').value;
+
+  wrapper.innerHTML = `
+    <div style="background:${colors.header};color:#fff;padding:14px 20px;font-size:14px;font-weight:700">小红书</div>
+    <div style="padding:16px 20px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:10px;line-height:1.5;color:${colors.text}">${esc(title)}</div>
+      <div style="font-size:13px;line-height:1.8;color:${colors.body};white-space:pre-wrap">${esc(content)}</div>
+      <div style="margin-top:12px;font-size:11px;color:${colors.tags}">${esc(tags)}</div>
+    </div>
+    <div style="background:#f9f9f9;padding:10px 20px;font-size:10px;color:#bbb;text-align:center">小红书图文 · 自制</div>
+  `;
+}
+
+function esc(t) { return t.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function updatePostsList() {
+  const list = document.getElementById('postsList');
+  if (posts.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:20px">还没有内容，输入后点击添加</div>';
+    return;
+  }
+  list.innerHTML = posts.map((p, i) => `
+    <div class="post-item ${i === currentEdit ? 'active' : ''}" onclick="editPost(${i})">
+      <div class="title">${p.title || '(无标题)'}</div>
+      <div class="preview-text">${(p.content||'').slice(0,40)}...</div>
+    </div>
+  `).join('');
+}
+
+function addPost() {
+  const title = document.getElementById('editTitle').value.trim();
+  const content = document.getElementById('editContent').value.trim();
+  const tags = document.getElementById('editTags').value.trim();
+  if (!title && !content) { alert('请输入标题或正文'); return; }
+
+  if (currentEdit >= 0 && currentEdit < posts.length) {
+    posts[currentEdit] = { title, content, tags };
+    currentEdit = -1;
+  } else {
+    posts.push({ title, content, tags });
+  }
+
+  document.getElementById('editTitle').value = '';
+  document.getElementById('editContent').value = '';
+  document.getElementById('editTags').value = '';
+  updatePostsList();
+  renderPreview();
+}
+
+function editPost(i) {
+  currentEdit = i;
+  const p = posts[i];
+  document.getElementById('editTitle').value = p.title;
+  document.getElementById('editContent').value = p.content;
+  document.getElementById('editTags').value = p.tags;
+  updatePostsList();
+  renderPreview();
+}
+
+async function exportAll() {
+  if (posts.length === 0) { alert('请先添加内容'); return; }
+  const tpl = document.querySelector('.template-btn.active').dataset.tpl;
+  const colors = getTemplateColors(tpl);
+
+  const { default: html2canvas } = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+
+  for (let i = 0; i < posts.length; i++) {
+    const p = posts[i];
+    const div = document.createElement('div');
+    div.style.width = '360px';
+    div.style.background = colors.bg;
+    div.style.fontFamily = '-apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif';
+    div.style.padding = '0';
+    div.style.position = 'absolute';
+    div.style.left = '-9999px';
+    div.innerHTML = `
+      <div style="background:${colors.header};color:#fff;padding:20px 24px;font-size:16px;font-weight:700">小红书</div>
+      <div style="padding:20px 24px">
+        <div style="font-size:20px;font-weight:700;margin-bottom:14px;line-height:1.5;color:${colors.text}">${p.title || ''}</div>
+        <div style="font-size:14px;line-height:1.9;color:${colors.body};white-space:pre-wrap">${esc2(p.content || '')}</div>
+        <div style="margin-top:14px;font-size:12px;color:${colors.tags}">${p.tags || ''}</div>
+      </div>
+      <div style="background:#f9f9f9;padding:12px 24px;font-size:11px;color:#bbb;text-align:center">小红书图文 · 自制</div>
+    `;
+    document.body.appendChild(div);
+
+    try {
+      const canvas = await html2canvas(div, { useCORS: true, scale: 2 });
+      const link = document.createElement('a');
+      link.download = `xiaohongshu_${i+1}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch(e) {
+      console.error(e);
+    }
+    document.body.removeChild(div);
+  }
+  alert('✅ 全部导出完成！');
+}
+
+// Update button text
+document.getElementById('addPostBtn').onclick = addPost;
+document.getElementById('exportBtn').onclick = exportAll;
+
+// Template switching
+document.querySelectorAll('.template-btn').forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    renderPreview();
+  };
+});
+
+// Real-time preview
+document.getElementById('editTitle').oninput = renderPreview;
+document.getElementById('editContent').oninput = renderPreview;
+document.getElementById('editTags').oninput = renderPreview;
+
+function esc2(t) { return t.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+renderPreview();
+</script>
+</body>
+</html>
